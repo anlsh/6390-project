@@ -142,10 +142,6 @@ def check_syntax_with_env(code_tree, curr_vars: set, curr_types: set):
             check_syntax_with_env(body, curr_vars, curr_types)
             return curr_vars, curr_types
 
-        elif root_node == "break":
-            # TODO handle breaking out of loops somehow
-            raise NotImplementedError(f"The break statement hasn't been implemented!")
-
         else:
             # TODO This isn't right... It will leak abstractions from (what should be) inner scopes
             # Actually, the implementation seems surprisingly resilient after running a few tests.
