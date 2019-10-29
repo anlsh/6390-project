@@ -7,9 +7,9 @@
 from typing import NewType
 
 
-def parse(program: str):
+def parse(src_str: str):
     "Converts a scheme expression into a string"
-    return read_from_tokens(tokenize(program))
+    return read_from_tokens(tokenize(src_str))
 
 
 def tokenize(s):
@@ -36,10 +36,4 @@ def read_from_tokens(tokens: list):
 
 def atom(token: str):
     "Numbers become numbers; every other token is a symbol."
-    try:
-        return int(token)
-    except ValueError:
-        try:
-            return float(token)
-        except ValueError:
-            return str(token)
+    return str(token)

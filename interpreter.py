@@ -1,85 +1,154 @@
-
-class UnboundVariableAccessError(Exception):
-    pass
-
-class DeallocatedMemoryAccessError(Exception):
-    pass
+from env import Env
+from language import *
 
 
-class BindingSet:
-    """
-    A class to hold all current bindings in the program (which are mostly
-    just variable values)
-    """
+class Procedure:
+    def __init__(self, fn_type, argspec_ls, fn_body):
 
-    def __init__(self,):
-        # Binding dictionary maintains actual values. The allocated dictionary tracks whether a given
-        # variable has been freed via a call to *free*
-        self.binding_dict = {}
-        self.type_dict = {}
-        self.allocated_dict = {}
+        # TODO How to handle recursive procedures?
 
-    def create_binding(self, varname: str, type: str, val):
-        # TODO COMPILER This should be a compilation check, not in the interpreter itself.
-        self.binding_exists_not_deallocated(varname)
+        self.argspec_ls = argspec_ls
+        self.fn_body = fn_body
+        # TODO Have to figure out how to actually use the function type...
+        self.type = fn_type
 
-        self.binding_dict[varname] = val
-        self.allocated_dict[varname] = True
-        return val
+    def __call__(self, *argvals):
+        if len(argvals) != len(self.argspec_ls):
+            raise RuntimeError("Mismatch between number of arguments required and number of arguments given")
+        env = Env()
+        for argspec, val in zip(self.argspec_ls, argvals):
+            name, tmod, base_t = argspec
+            # TODO TYPING Have to create this as a function type!
+            env.define_bind(name, tmod, base_t)
+            env.set_bind_val(name, val)
+
+        return eval_form(env, self.fn_body)
 
 
-    def binding_exists_not_deallocated(self, varname: str):
-        if varname in self.binding_dict and not self.allocated_dict[varname]:
-            return DeallocatedMemoryAccessError
-        if varname not in self.binding_dict:
-            raise UnboundVariableAccessError()
+def eval_form(base_env: Env, prog):
 
-    def set_binding(self, varname: str, val):
+    #################################################################################################
+    # Defining the macro functions here is the only nice way to allow them to be mutually recursive #
+    #################################################################################################
 
-        # TODO COMPILER This should be a compilation check, not in the interpreter itself.
-        self.binding_exists_not_deallocated(varname)
+    def eval_defvar(env: Env, var_name, bmod, btype):
+        env.define_bind(var_name, bmod, btype)
+        return UNIT
 
-        self.binding_dict[varname] = val
-        return val
+    def eval_deftype(env: Env, base_type):
+        env.define_type(base_type)
+        return base_type
 
-    def get_val(self, varname: str):
-        """If the token is a number, return it as-is. Else, it's a symbol so try to look in up in default bindings"""
+    def eval_defun(env: Env, fun_spec, argspec_list, fn_body):
+        # TODO Have to figure out how to represent/check function types
+        TD_FUNCTION_TYPE = None
+        env.define_bind(*fun_spec)
+        env.set_bind_val(fun_spec[0], Procedure(TD_FUNCTION_TYPE, argspec_list, fn_body))
+
+    def eval_set(env: Env, var_name, val_prog):
+        final = eval_form(env, val_prog)
+        env.set_bind_val(var_name, final)
+        return final
+
+    def eval_apply(env: Env, fun_name, arg_list):
+        # TODO Figure out apply, it's actually useless
+        return env.get_bind_val(fun_name,)(*arg_list)
+
+    def eval_if(env: Env, when_c, then_c, else_c, ):
+        """
+        Take in when, then, and else ASTs and execute the if statement
+        """
+        when_result = eval_form(env, when_c)
+        inner_env = Env(env)
+
+        if when_result:
+            ret = eval_form(inner_env, then_c)
+        else:
+            ret = eval_form(inner_env, else_c)
+        inner_env.deallocate()
+
+        return ret
+
+    def eval_while(env: Env, test_c, default_c, body_c):
+
+        inner_env = Env(env)
+        return_default = True
+        ret = None
+
+        while True:
+            test_result = eval_form(env, test_c)
+            if test_result:
+                return_default = False
+                ret = eval_form(inner_env, body_c)
+            else:
+                break
+
+        if not return_default:
+            return ret
+        else:
+            return eval_form(inner_env, default_c)
+
+    def eval_mut_ref(env: Env, var_name):
+        # TODO
+        raise NotImplementedError
+
+    def eval_ref(env: Env, var_name):
+        # TODO
+        raise NotImplementedError
+
+    ######################################
+    # Begin actual evaluation code here! #
+    ######################################
+
+    macro_evaluators = {
+        "defun": eval_defun,
+        "defvar": eval_defvar,
+        "deftype": eval_deftype,
+        "set": eval_set,
+        "apply": eval_apply,
+        "if": eval_if,
+        "while": eval_while,
+    }
+
+    ############################################
+    # Take care of evaluating "special" values #
+    ############################################
+
+    if isinstance(prog, str):
+        if prog == "true":
+            return True
+        elif prog == "false":
+            return False
+        elif prog == "nil":
+            return None
         try:
-            return int(varname)
+            return int(prog)
         except ValueError:
-            self.binding_exists_not_deallocated(varname)
-            return self.binding_dict[varname]
+            pass
+        try:
+            return float(prog)
+        except ValueError:
+            pass
 
-    def free_binding(self, varname: str):
-        """
-        Free the variable (corresponding to the stack being de-allocated
-        so that it can never be accessed again
-        """
-        self.binding_exists_not_deallocated(varname)
+        return base_env.get_bind_val(prog)
+    else:
+        if len(prog) == 0:
+            return NIL
+        else:
+            first_element = prog[0]
+            if isinstance(first_element, str):
+                if first_element in MACRO_NAMES:
+                    return macro_evaluators[first_element](base_env, *prog[1:])
+                else:
+                    evaluated_args = [eval_form(base_env, arg) for arg in prog[1:]]
+                    return base_env.get_bind_val(first_element)(*evaluated_args)
+            else:
+                ret = None
+                for prog in prog:
+                    ret = eval_form(base_env, prog)
 
-        self.allocated_dict[varname] = False
-        return
-
-
-def eval_with_bindings(code_tree, bindings: BindingSet):
-    """
-    Given a code tree, evaluate it! This code is not meant to check that the code is syntactically correct:
-        that's the job of the parser. It assumes that the code it's been passed in is valid, and it just GOES
-
-    :param code_tree:
-    :param bindings:
-    :return:
-    """
-
-    if not isinstance(code_tree, list):
-        return bindings.get_val(code_tree)
-
-    root_form = code_tree[0]
-    if root_form == "define":
-        "(define variable-name"
-        assert len(code_tree) == 3
-        BindingSet.create_binding()
+                return ret
 
 
-
-
+def evaluate(prog):
+    return eval_form(Env(), prog)
