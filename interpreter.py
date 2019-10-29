@@ -19,8 +19,7 @@ class Procedure:
         for argspec, val in zip(self.argspec_ls, argvals):
             name, tmod, base_t = argspec
             # TODO TYPING Have to create this as a function type!
-            tspec = None
-            env.define_bind(name, tspec)
+            env.define_bind(name, tmod, base_t)
             env.set_bind_val(name, val)
 
         return eval_form(env, self.fn_body)
@@ -32,19 +31,19 @@ def eval_form(base_env: Env, prog):
     # Defining the macro functions here is the only nice way to allow them to be mutually recursive #
     #################################################################################################
 
-    def eval_defvar(env: Env, var_name, btype):
-        env.define_bind(var_name, btype)
+    def eval_defvar(env: Env, var_name, bmod, btype):
+        env.define_bind(var_name, bmod, btype)
         return UNIT
 
     def eval_deftype(env: Env, base_type):
         env.define_type(base_type)
         return base_type
 
-    def eval_defun(env: Env, fun_name, fun_rettype_spec, argspec_list, fn_body):
+    def eval_defun(env: Env, fun_spec, argspec_list, fn_body):
         # TODO Have to figure out how to represent/check function types
         TD_FUNCTION_TYPE = None
-        env.define_bind(fun_name, None)
-        env.set_bind_val(fun_name, Procedure(TD_FUNCTION_TYPE, argspec_list, fn_body))
+        env.define_bind(*fun_spec)
+        env.set_bind_val(fun_spec[0], Procedure(TD_FUNCTION_TYPE, argspec_list, fn_body))
 
     def eval_set(env: Env, var_name, val_prog):
         final = eval_form(env, val_prog)
@@ -52,6 +51,7 @@ def eval_form(base_env: Env, prog):
         return final
 
     def eval_apply(env: Env, fun_name, arg_list):
+        # TODO Figure out apply, it's actually useless
         return env.get_bind_val(fun_name,)(*arg_list)
 
     def eval_if(env: Env, when_c, then_c, else_c, ):

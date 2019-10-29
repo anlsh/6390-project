@@ -4,14 +4,15 @@ from language import *
 
 class Env:
 
-    i_type = 0
-    i_val = 1
-    i_wasset = 2
+    i_tmod = 0
+    i_type = 1
+    i_val = 2
+    i_wasset = 3
 
     def __init__(self, outer=None):
-        # Bindings maps a name to a tuple ((type, value, wasset), defining_env)
+        # Bindings maps a name to a tuple ((tmod, typebase, value, wasset), defining_env)
         # TODO Have to define all the types on these!
-        self.bindings = {fname: ((None, builtin_fns[fname], True), self) for fname in builtin_fns}
+        self.bindings = {fname: ((None, None, builtin_fns[fname], True), self) for fname in builtin_fns}
         self.types = set()
         self.allocated = True
         self.outer = outer
@@ -36,14 +37,15 @@ class Env:
         else:
             self.types.add(base_name)
 
-    def define_bind(self, name, vtype):
+    def define_bind(self, name, bmod, btype):
         if self.contains_bind(name):
             raise BindingRedefinitionError(f"Attempting to redefine {name}")
 
         ######################################################################################################
-        # Important! Make sure that this line and the one in set_bind_val are in *exact* agreement on format #
+        # Important! Make sure that this line and the one in set_bind_val and settings bindings are in *exact*
+        # agreement on format #
         ######################################################################################################
-        self.bindings[name] = (vtype, None, False), self
+        self.bindings[name] = (bmod, btype, None, False), self
 
     def get_bind(self, name):
         if not self.allocated:
@@ -74,12 +76,13 @@ class Env:
     def set_bind_val(self, name, val,):
         vinfo, defining_env = self.get_bind(name)
 
-        curr_vtype, _, _ = vinfo
+        bmod, btype, _, _ = vinfo
 
         ######################################################################################################
-        # Important! Make sure that this line and the one in define_bind_ are in *exact* agreement on format #
+        # Important! Make sure that this line and the one in define_bind_ and __init__ set_bindings
+        # are in *exact* agreement on format #
         ######################################################################################################
-        defining_env.bindings[name] = (curr_vtype, val, True), defining_env
+        defining_env.bindings[name] = (bmod, btype, val, True), defining_env
 
     def deallocate(self):
         self.allocated = False
