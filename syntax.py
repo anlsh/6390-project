@@ -17,19 +17,19 @@ def check_valid_typemod(mod: str):
 def check_name_exists(name: str, curr_vars: set):
     check_id_spec(name)
     if name not in curr_vars:
-        raise UndefinedVariableError()
+        raise VariableUndefinedError()
 
 
 def check_name_nexists(name: str, curr_vars: set):
     check_id_spec(name)
     if name in curr_vars:
-        raise RedefiningVariableError()
+        raise BindingRedefinitionError()
 
 
 def check_type_exists(name: str, curr_types: set):
     check_id_spec(name)
     if name not in curr_types:
-        raise UndefinedTypeError()
+        raise TypeUndefinedError()
 
 
 def check_type_nexists(name: str, curr_types: set):

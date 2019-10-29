@@ -1,16 +1,20 @@
-class UndefinedVariableError(Exception):
+class VariableUndefinedError(Exception):
     pass
 
 
-class RedefiningVariableError(Exception):
+class VariableUnsetAccessError(Exception):
     pass
 
 
-class UndefinedTypeError(Exception):
+class BindingRedefinitionError(Exception):
     pass
 
 
-class RedefiningTypeError(Exception):
+class TypeRedefinitionError(Exception):
+    pass
+
+
+class TypeUndefinedError(Exception):
     pass
 
 
@@ -19,7 +23,4 @@ class DeallocatedEnvironmentError(Exception):
 
 
 class DeallocatedVariableError(Exception):
-    pass
-
-class TypeRedefinitionError(Exception):
     pass
