@@ -2,7 +2,7 @@ import pytest
 
 from syntax import check_syntax
 from syntax_errors import *
-from parser import parse
+from our_parser import parse
 
 
 def test_undefined_var_access():
