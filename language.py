@@ -12,15 +12,15 @@ builtin_fns = {
 }
 
 builtin_fn_types = {
-        '+': ["int", "float"],
-        '-': ["int", "float"],
-        '*': ["int", "float"],
-        '/': ["int", "float"],
-        '>': "bool",
-        '<': "bool",
-        '>=': "bool",
-        '<=': "bool",
-        '=': "bool",
+        '+': (["int", "float"], ["int", "float"]),
+        '-': (["int", "float"], ["int", "float"]),
+        '*': (["int", "float"], ["int", "float"]),
+        '/': (["int", "float"], ["int", "float"]),
+        '>': (["int", "float"], "bool"),
+        '<': (["int", "float"], "bool"),
+        '>=': (["int", "float"], "bool"),
+        '<=': (["int", "float"], "bool"),
+        '=': (["int", "float"], "bool"),
         # what return type is print?
         'print': NIL
 }

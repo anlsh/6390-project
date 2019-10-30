@@ -20,9 +20,9 @@ class Procedure:
         for argspec, val in zip(self.argspec_ls, argvals):
             name, tmod, base_t = argspec
             # TODO TYPING Have to create this as a function type!
-            if not base_t == check_type_of_evaluated(env, val):
-                raise FunctionArgumentTypeError(
-                    f"{argspec[0]}: Expected {base_t}, Received: {check_type_of_evaluated(env, val)}")
+            #if not base_t == check_type(env, val):
+            #    raise FunctionArgumentTypeError(
+            #        f"{argspec[0]}: Expected {base_t}, Received: {check_type_of_evaluated(env, val)}")
             env.define_bind(name, tmod, base_t)
             env.set_bind_val(name, val)
 
@@ -45,7 +45,8 @@ def eval_form(base_env: Env, prog):
 
     def eval_defun(env: Env, fun_spec, argspec_list, fn_body):
         # TODO Have to figure out how to represent/check function types
-        function_type = (fun_spec[2])
+        function_type = ([arg[2] for arg in argspec_list], fun_spec[2])
+        fun_spec = (fun_spec[0], fun_spec[1], (function_type[0], function_type[1]))
         env.define_bind(*fun_spec)
         env.set_bind_val(fun_spec[0], Procedure(function_type, argspec_list, fn_body))
 
@@ -144,9 +145,16 @@ def eval_form(base_env: Env, prog):
                 if first_element in MACRO_NAMES:
                     return macro_evaluators[first_element](base_env, *prog[1:])
                 else:
+                    # builtin functions are overloaded, should revisit this
+                    if first_element not in builtin_fn_types:
+                        arg_types = [check_type(base_env, arg) for arg in prog[1:]]
+                        for arg_type, arg_type_spec in zip(arg_types, base_env.get_bind_type(first_element)[0]):
+                            if arg_type != arg_type_spec:
+                                raise FunctionArgumentTypeError(
+                                    f"{first_element}: Expected {arg_type_spec}, Received: {arg_type}")
                     evaluated_args = [eval_form(base_env, arg) for arg in prog[1:]]
                     return_value = base_env.get_bind_val(first_element)(*evaluated_args)
-                    if not check_type_of_evaluated(base_env, return_value) in base_env.get_bind_type(first_element):
+                    if check_type(base_env, return_value) not in base_env.get_bind_type(first_element)[1]:
                         raise FunctionReturnTypeError(f"{first_element} does not return value of type "
                                                       f"{base_env.get_bind_type(first_element)}")
                     return base_env.get_bind_val(first_element)(*evaluated_args)
@@ -161,3 +169,21 @@ def eval_form(base_env: Env, prog):
 def evaluate(prog):
     return eval_form(Env(), prog)
 
+
+def check_type(env: Env, prog):
+    if env.contains_bind(prog):
+        return env.get_bind_type(prog)
+
+    if isinstance(prog, bool):
+        return "bool"
+    elif isinstance(prog, int):
+        return "int"
+    elif isinstance(prog, float):
+        return "float"
+
+    if isinstance(evaluate(prog), bool):
+        return "bool"
+    elif isinstance(evaluate(prog), int):
+        return "int"
+    elif isinstance(evaluate(prog), float):
+        return "float"
