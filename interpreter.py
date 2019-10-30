@@ -1,5 +1,6 @@
 from env import Env
 from language import *
+from type_checker import *
 
 
 class Procedure:
@@ -19,6 +20,9 @@ class Procedure:
         for argspec, val in zip(self.argspec_ls, argvals):
             name, tmod, base_t = argspec
             # TODO TYPING Have to create this as a function type!
+            if not base_t == check_type_of_evaluated(env, val):
+                raise FunctionArgumentTypeError(
+                    f"{argspec[0]}: Expected {base_t}, Received: {check_type_of_evaluated(env, val)}")
             env.define_bind(name, tmod, base_t)
             env.set_bind_val(name, val)
 
@@ -41,9 +45,9 @@ def eval_form(base_env: Env, prog):
 
     def eval_defun(env: Env, fun_spec, argspec_list, fn_body):
         # TODO Have to figure out how to represent/check function types
-        TD_FUNCTION_TYPE = None
+        function_type = (fun_spec[2])
         env.define_bind(*fun_spec)
-        env.set_bind_val(fun_spec[0], Procedure(TD_FUNCTION_TYPE, argspec_list, fn_body))
+        env.set_bind_val(fun_spec[0], Procedure(function_type, argspec_list, fn_body))
 
     def eval_set(env: Env, var_name, val_prog):
         final = eval_form(env, val_prog)
@@ -141,6 +145,10 @@ def eval_form(base_env: Env, prog):
                     return macro_evaluators[first_element](base_env, *prog[1:])
                 else:
                     evaluated_args = [eval_form(base_env, arg) for arg in prog[1:]]
+                    return_value = base_env.get_bind_val(first_element)(*evaluated_args)
+                    if not check_type_of_evaluated(base_env, return_value) in base_env.get_bind_type(first_element):
+                        raise FunctionReturnTypeError(f"{first_element} does not return value of type "
+                                                      f"{base_env.get_bind_type(first_element)}")
                     return base_env.get_bind_val(first_element)(*evaluated_args)
             else:
                 ret = None
@@ -152,3 +160,4 @@ def eval_form(base_env: Env, prog):
 
 def evaluate(prog):
     return eval_form(Env(), prog)
+

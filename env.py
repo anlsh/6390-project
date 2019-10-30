@@ -11,8 +11,8 @@ class Env:
 
     def __init__(self, outer=None):
         # Bindings maps a name to a tuple ((tmod, typebase, value, wasset), defining_env)
-        # TODO Have to define all the types on these!
-        self.bindings = {fname: ((None, None, builtin_fns[fname], True), self) for fname in builtin_fns}
+        self.bindings = {fname: ((None, builtin_fn_types[fname], builtin_fns[fname], True), self)
+                         for fname in builtin_fns}
         self.types = set()
         self.allocated = True
         self.outer = outer

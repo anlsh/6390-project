@@ -2,7 +2,7 @@ import pytest
 
 from language import *
 from interpreter import evaluate
-from parser import parse
+from our_parser import parse
 
 from syntax_errors import *
 

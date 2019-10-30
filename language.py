@@ -10,3 +10,17 @@ builtin_fns = {
         '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le, '=': op.eq,
         'print': print
 }
+
+builtin_fn_types = {
+        '+': ["int", "float"],
+        '-': ["int", "float"],
+        '*': ["int", "float"],
+        '/': ["int", "float"],
+        '>': "bool",
+        '<': "bool",
+        '>=': "bool",
+        '<=': "bool",
+        '=': "bool",
+        # what return type is print?
+        'print': NIL
+}
