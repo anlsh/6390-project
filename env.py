@@ -18,9 +18,11 @@ class Env:
     the interpreter will map them to actual values.
     """
 
-    def __init__(self, outer=None):
+    def __init__(self, *, defaults=None, outer=None):
         self.bindings = {}
         self.outer = outer
+        for k in defaults:
+            self.define_bind(k, defaults[k])
 
     def contains_bind(self, name: str) -> bool:
         """

@@ -1,6 +1,7 @@
 import operator as op
 from typing import Tuple, Union
 from enum import Enum
+from parser import parse
 
 
 def str_in_enum(key: str, EType) -> bool:
@@ -28,11 +29,6 @@ class Type:
         self.type_enum = type_enum
         self.type_args = type_args
 
-        if not str_in_enum(self.mod, T_mod):
-            raise RuntimeError(f"Unrecognized type {self.mod}")
-        elif not str_in_enum(self.type_enum, type_enum):
-            raise RuntimeError(f'Unrecognized type {self.type_enum}')
-
     def __eq__(self, other):
         return (self.mod == other.mod) and (self.type_enum == other.type_enum) and (self.type_args == other.type_args)
 
@@ -41,17 +37,24 @@ def tparse(type_prog: Union[str, Tuple]) -> Type:
     """
     Given a program tree generated via the CFG defined in language spec, create the corresponding Type object
     """
-    mod, enum, args = type_prog
+    modstr, enumstr, args = type_prog
+    mod, enum = T_mod[modstr], T_cat[enumstr]
+
     if enum == T_cat.fun:
-        ret_type, arg_types = args
-        parsed_arg_types = tuple(tparse(a) for a in arg_types)
-        return Type(mod, enum, (Type(*ret_type), parsed_arg_types))
+        ret_tprog, arg_tprog_ls = args
+        ret_t = tparse(ret_tprog)
+        parsed_arg_types = tuple(tparse(a) for a in arg_tprog_ls)
+        return Type(mod, enum, (ret_t, parsed_arg_types))
     elif enum == T_cat.ref:
         return Type(mod, enum, tparse(args))
     elif enum == T_cat.val:
         return Type(mod, enum, args)
     else:
         raise RuntimeError("Unrecognized type code!")
+
+
+def tparse_from_string(prog_code: str) -> Type:
+    return tparse(parse(prog_code))
 
 
 builtin_fn_vals = {
@@ -61,10 +64,13 @@ builtin_fn_vals = {
 }
 
 builtin_fn_types = {
-        "+": tparse((T_mod.un, T_cat.fun, ((T_mod.un, T_cat.val, 'int'),
-                                           ((T_mod.un, T_cat.val, 'int'), (T_mod.un, T_cat.val, 'int'))))),
-        "not": tparse((T_mod.un, T_cat.fun, ((T_mod.un, T_cat.val, 'bool'),
-                                             ((T_mod.un, T_cat.val, 'bool'),))))
+        "+":  tparse((T_mod.un.value, T_cat.fun.value,
+                      ((T_mod.un.value, T_cat.val.value, 'int'),
+                        ((T_mod.un.value, T_cat.val.value, 'int'),
+                         (T_mod.un.value, T_cat.val.value, 'int')))
+                      )),
+        "not": tparse((T_mod.un.value, T_cat.fun.value, ((T_mod.un.value, T_cat.val.value, 'bool'),
+                                             ((T_mod.un.value, T_cat.val.value, 'bool'),))))
 }
 
 T_NIL = Type(T_mod.un, T_cat.val, 'nil')
