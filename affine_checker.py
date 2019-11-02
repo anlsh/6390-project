@@ -56,6 +56,7 @@ def parse_type(type_prog):
     else:
         raise RuntimeError("Unrecognized type code!")
 
+
 base_context = {
     "+": parse_type((mod_un, en_fun, ( (mod_un, en_o, 'int'),  ((mod_un, en_o, 'int'), (mod_un, en_o, 'int'))  )  )),
     "not": parse_type((mod_un, en_fun, ( (mod_un, en_o, 'bool'),  ((mod_un, en_o, 'bool'),) )))
@@ -166,11 +167,15 @@ def type_check(context: dict, prog) -> Tuple[dict, Type]:
     elif prog[0] == "set":
         _, target_loc, new_def = prog
         # TODO The evaluation order is very important (might require deep consideration). Consider (set x (apply + x 1))
-        context, target_loc_type = type_check(context, target_loc)
+        if target_loc not in context:
+            raise UndeclaredVariableError
+        elif context[target_loc] is None:
+            raise VariableRedefinitionError
+        target_loc_type = context[target_loc]
         context, def_type = type_check(context, new_def)
         if target_loc_type.type_enum != en_ref:
             raise RuntimeError("Attempting to set a non-reference!")
-        elif not subtype(def_type, def_type.type_args):
+        elif not subtype(def_type, target_loc_type.type_args):
             raise TypeMismatchError("Attempting to set to the wrong thing!")
 
         # TODO I'm not sure what to do here... It's getting a bit late :<
