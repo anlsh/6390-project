@@ -1,13 +1,13 @@
 import pytest
 import language as lang
-from affine_checker import AffineTypeChecker as ATC, TypeMismatchError
+from affine_checker import AffineTypeChecker as ATC, TypeMismatchError, UnusedLinVariableError
 from env import Env, BindingRedefinitionError
 from parser import parse
 
 
 @pytest.fixture
 def base_env():
-    return Env(defaults=lang.builtin_fn_types)
+    return Env(outer=Env(defaults=lang.builtin_fn_types))
 
 
 def test_declare_variable(base_env):
@@ -60,3 +60,10 @@ def test_decl_var4(base_env):
     T = ATC.type_check(base_env, prog)
     assert T == lang.T_INT
     # assert ctx['x'] == tparse(parse("(aff ref (un val int))"))
+
+
+def test_unused_linint_errs(base_env):
+    # TODO Do we need to care about this?
+    prog = parse("(defvar x (lin val int) 3)")
+    with pytest.raises(UnusedLinVariableError):
+        T = ATC.type_check(base_env, prog, descope=True)

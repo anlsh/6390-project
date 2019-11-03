@@ -13,6 +13,14 @@ class T_mod(Enum):
     lin = "lin"
     aff = "aff"
 
+    @classmethod
+    def restriction_hierarchy(cls,):
+        """
+        A appearing before B in the hierarchy means that A is less restrictive than B
+        :return:
+        """
+        return [cls.un, cls.aff, cls.lin]
+
 
 class T_cat(Enum):
     ref = 'ref'
@@ -31,6 +39,13 @@ class Type:
 
     def __eq__(self, other):
         return (self.mod == other.mod) and (self.type_enum == other.type_enum) and (self.type_args == other.type_args)
+
+    def less_restrictive(self, other):
+        self_mod = self.mod
+        other_mod = other.mod
+        p1 = T_mod.restriction_hierarchy().index(self_mod) <= T_mod.restriction_hierarchy().index(other_mod)
+        # WARNING Code duplicated from above
+        return p1 and (self.type_enum == other.type_enum) and (self.type_args == other.type_args)
 
 
 def tparse(type_prog: Union[str, Tuple]) -> Type:

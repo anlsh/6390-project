@@ -12,6 +12,19 @@ class LinAffineVariableReuseError(RuntimeError):
     pass
 
 
+class UnusedLinVariableError(RuntimeError):
+    pass
+
+
+def err_on_unused_lins(env: Env):
+    for name in env.get_toplevel_binds():
+        if env.get_bind_val(name) is None:
+            continue
+        name_t = env.get_bind_val(name)
+        if name_t.mod == lang.T_mod.lin:
+            raise UnusedLinVariableError
+
+
 class AffineTypeChecker:
 
     @classmethod
@@ -46,7 +59,7 @@ class AffineTypeChecker:
         declared_t = lang.tparse(declared_tprog)
         init_t = cls.type_check(env, init_prog)
 
-        if not subtype(init_t, declared_t):
+        if not init_t.less_restrictive(declared_t):
             raise TypeMismatchError
         else:
             # TODO Is setting the variable name to be a reference the correct thing to do? Also, should it be affine?
@@ -62,10 +75,7 @@ class AffineTypeChecker:
         for arg_name, arg_tprog in arg_spec_ls:
             new_env.define_bind(arg_name, lang.tparse(arg_tprog))
             arg_spec_ls += (new_env.get_bind_val(arg_name),)
-        actual_ret_t = cls.type_check(new_env, body)
-
-        # TODO This is one of the two places where an explicit check for affine and linear types has to go, I'm p sure
-        # The other is in the sequential evaluation part. Both correspond to variables being descoped.
+        actual_ret_t = cls.type_check(new_env, body, descope=True)
 
         if not subtype(actual_ret_t, ret_t):
             raise TypeMismatchError(f'{ret_tprog} returns the wrong type!')
@@ -134,9 +144,10 @@ class AffineTypeChecker:
         return ret_type
 
     @classmethod
-    def type_check(cls, env: Env, prog: Union[Tuple, str]) -> lang.Type:
+    def type_check(cls, env: Env, prog: Union[Tuple, str], descope: bool = False) -> lang.Type:
         """
         Given a context Gamma and program tree, type-check it (modifying gamma along the way)
+        :param descope:
         :param env:
         :param prog:
         :return:
@@ -152,18 +163,23 @@ class AffineTypeChecker:
             "set": cls.check_set,
             "apply": cls.check_apply
         }
+        ret = None
 
         if not (isinstance(prog, tuple)):
-            return cls.check_atomic(env, prog)
-
+            ret = cls.check_atomic(env, prog)
         elif len(prog) == 0:
             # The empty list is always interpreted as nil.
-            return lang.T_NIL
+            ret = lang.T_NIL
         elif prog[0] in lang.MACRO_NAMES:
-            return macro_tcheck_fns[prog[0]](env, *prog[1:])
+            ret = macro_tcheck_fns[prog[0]](env, *prog[1:])
         else:
             # We performed the check for zero-length above, so None will never actually be returned
-            return cls.check_sequential(env, prog)
+            ret = cls.check_sequential(env, prog)
+
+        if descope:
+            err_on_unused_lins(env)
+
+        return ret
 
 
 def subtype(t1, t2):

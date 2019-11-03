@@ -21,7 +21,7 @@ class Env:
     def __init__(self, *, defaults=None, outer=None):
         self.bindings = {}
         self.outer = outer
-        for k in defaults:
+        for k in (defaults or []):
             self.define_bind(k, defaults[k])
 
     def contains_bind(self, name: str) -> bool:
@@ -47,6 +47,9 @@ class Env:
         self.bindings[name] = None, self
         self.set_bind_val(name, val)
 
+    def get_toplevel_binds(self, ) -> Tuple:
+        return tuple([name for name in self.bindings])
+
     def get_bind(self, name: str) -> Tuple[Any, Any]:
         """
         Get a tuple (val, defining_env) given the name of a binding. defining_env is either the current Env or one
@@ -69,3 +72,4 @@ class Env:
     def set_bind_val(self, name: str, val: Any,) -> None:
         _, defining_env = self.get_bind(name)
         defining_env.bindings[name] = val, defining_env
+
