@@ -19,3 +19,4 @@ builtin_fn_types = {
         "+": FunType(mod=Tmod.un, retT=T_INT, argTs=(T_INT, T_INT)),
         "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_BOOL,))
 }
+
