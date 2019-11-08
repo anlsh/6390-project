@@ -1,6 +1,6 @@
-from syntax_errors import *
 from typing import Any
 from typing import Tuple
+from dsl_types import Type
 
 
 class BindingUndefinedError(Exception):
@@ -19,6 +19,10 @@ class Env:
     """
 
     def __init__(self, *, defaults=None, outer=None):
+
+        if outer is not None:
+            assert isinstance(outer, Env)
+
         self.bindings = {}
         self.outer = outer
         for k in (defaults or []):
@@ -73,3 +77,24 @@ class Env:
         _, defining_env = self.get_bind(name)
         defining_env.bindings[name] = val, defining_env
 
+
+class TypeCheckEnv(Env):
+    """
+    Just a regular old environment, but with Type annotations everywhere so that Pycharm can correctly hint it
+    """
+    def __init__(self, defaults=None, outer=None):
+        if outer is not None:
+            assert isinstance(outer, TypeCheckEnv)
+        super().__init__(defaults=defaults, outer=outer)
+
+    def define_bind(self, name: str, val: Type) -> None:
+        return super().define_bind(name=name, val=val)
+
+    def get_bind(self, name: str) -> Tuple[Type, Env]:
+        return super().get_bind_val(name=name)
+
+    def get_bind_val(self, name: str) -> Type:
+        return super().get_bind_val(name=name)
+
+    def set_bind_val(self, name: str, val: Type,) -> None:
+        return super().set_bind_val(name=name, val=val)

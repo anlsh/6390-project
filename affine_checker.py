@@ -1,7 +1,9 @@
 import language as lang
+
+import dsl_types as dslT
 from typing import Tuple, Union
 
-from env import Env
+from env import TypeCheckEnv
 
 
 class TypeMismatchError(RuntimeError):
@@ -16,127 +18,127 @@ class UnusedLinVariableError(RuntimeError):
     pass
 
 
-def err_on_unused_lins(env: Env):
+def err_on_unused_lins(env: TypeCheckEnv):
     for name in env.get_toplevel_binds():
         if env.get_bind_val(name) is None:
             continue
         name_t = env.get_bind_val(name)
-        if name_t.mod == lang.T_mod.lin:
+        if name_t.is_lin():
             raise UnusedLinVariableError
 
 
 class AffineTypeChecker:
 
     @classmethod
-    def check_atomic(cls, env: Env, prog: str) -> lang.Type:
-        # Check if we can interpret the program as an integer...
+    def check_atomic(cls, env: TypeCheckEnv, prog: str) -> dslT.Type:
+        # Try to interpret it as an integer or boolean first
         try:
             int(prog)
             return lang.T_INT
         except ValueError:
-            pass
-
-        # Or if we can interpret it as a boolean
-        if prog in ['false', 'true']:
-            return lang.T_BOOL
+            if prog in lang.bool_map:
+                return lang.T_BOOL
 
         # If the program isn't a boolean or integer, it must be a variable. Look it up in the current context
         # A variable's entry is set to None once a linear or affine judgement about it has been used. If we're
         # trying to use it again, then throw an error
-        if env.get_bind_val(prog) is None:
-            raise LinAffineVariableReuseError(f'Duplicate use of {prog}')
+        if env.get_bind_val(prog).is_borrow():
+            raise LinAffineVariableReuseError(f'{prog} attempts to use borrowed value')
 
         # If the judgement is unrestricted, then we can use it without any worry. If not, then we have to remove
         # the judgement from the context after using it.
+        # TODO This is where we'd implement checks for the "copy" trait.
         t = env.get_bind_val(prog)
-        if t.mod != lang.T_mod.un:
-            env.set_bind_val(prog, None)
+        if not t.is_un():
+            t.set_borrow()
 
         return t
 
     @classmethod
-    def check_defvar(cls, env: Env, name, declared_tprog, init_prog):
-        declared_t = lang.tparse(declared_tprog)
-        init_t = cls.type_check(env, init_prog)
+    def check_defvar(cls, env: TypeCheckEnv, name, declared_tprog, init_prog):
 
-        if not init_t.less_restrictive(declared_t):
-            raise TypeMismatchError
+        signature_t = dslT.tparse(declared_tprog)
+        initprogram_t = cls.type_check(env, init_prog, being_bound=True)
+
+        if not dslT.Type.is_subtype(initprogram_t, signature_t):
+            raise TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
+                                    f'but got {initprogram_t}, which is not a subtype')
         else:
-            # TODO Is setting the variable name to be a reference the correct thing to do? Also, should it be affine?
-            env.define_bind(name, lang.Type(lang.T_mod.aff, lang.T_cat.ref, declared_t))
+            env.define_bind(name, signature_t)
             return lang.T_UNIT
 
     @classmethod
-    def check_defun(cls, env: Env, fname, f_tmod_str, ret_tprog, arg_spec_ls, *body):
-        ret_t = lang.tparse(ret_tprog)
+    def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
 
-        new_env = Env()
-        actual_arg_t_ls = ()
+        # Functions don't close over enclosing values, so declare a new env that the body will be type-checking in
+        new_env = TypeCheckEnv()
+
+        # To type-check the body, first assume that all arguments have the declared types...
+        arg_t_ls = ()
         for arg_name, arg_tprog in arg_spec_ls:
-            new_env.define_bind(arg_name, lang.tparse(arg_tprog))
+            new_env.define_bind(arg_name, dslT.tparse(arg_tprog))
             arg_spec_ls += (new_env.get_bind_val(arg_name),)
+
+        # And then check the body to see what is returned in the end. Set descope=True to make sure there aren't any
+        # linear judgements used
         actual_ret_t = cls.type_check(new_env, body, descope=True)
 
-        if not subtype(actual_ret_t, ret_t):
-            raise TypeMismatchError(f'{ret_tprog} returns the wrong type!')
+        # Make sure that the actual return value is a subtype of the signature return value
+        sig_ret_t = dslT.tparse(sig_ret_tprog)
+        if not dslT.Type.is_subtype(actual_ret_t, sig_ret_t):
+            raise TypeMismatchError(f'Function actually returns {actual_ret_t}, which is not a subtype of declared'
+                                    f'return {sig_ret_t}')
         else:
-            env.define_bind(fname, lang.Type(lang.T_mod[f_tmod_str], lang.T_cat.fun,
-                                             (ret_t, actual_arg_t_ls)))
+            env.define_bind(fname,
+                            dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls)
+            )
+            return lang.T_UNIT
+
+    # TODO Implement the whole shebang on references... Seriously wtf are these things...
+
+    @classmethod
+    def check_ref(cls, env: TypeCheckEnv, referenced_thing):
+        thing_type = cls.type_check(env, referenced_thing)
+        return lang.Type(lang.Tmod.aff, lang.Tcat.ref, thing_type)
+
+    @classmethod
+    def check_dref(cls, env: TypeCheckEnv, thing):
+        thing_type = cls.type_check(env, thing)
+        if thing_type.type_enum != lang.Tcat.ref:
+            raise RuntimeError("Attempted to dereference something that's not a reference!")
+        return thing_type.__type_args
+
+    @classmethod
+    def check_set(cls, env: TypeCheckEnv, target_loc, new_def):
+        place_sig_t = env.get_bind_val(target_loc)
+        setform_t = cls.type_check(env, new_def, being_bound=True)
+
+        if not dslT.Type.is_subtype(setform_t, place_sig_t):
+            raise TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
+        else:
             return lang.T_UNIT
 
     @classmethod
-    def check_ref(cls, env: Env, referenced_thing):
-        thing_type = cls.type_check(env, referenced_thing)
-        # TODO What should references be? Affine? I think they can be unrestricted as long as they're immutable, and
-        # we should only be able to call set on a mutable reference (pretty sure that will give us the behavior we want)
-        return lang.Type(lang.T_mod.aff, lang.T_cat.ref, thing_type)
-
-    @classmethod
-    def check_dref(cls, env: Env, thing):
-        thing_type = cls.type_check(env, thing)
-        if thing_type.type_enum != lang.T_cat.ref:
-            raise RuntimeError("Attempted to dereference something that's not a reference!")
-        return thing_type.type_args
-
-    @classmethod
-    def check_set(cls, env: Env, target_loc, new_def):
-        # TODO Should we check that only mutable references are ever set?
-        # TODO The evaluation order is very important (might require deep consideration).
-        #  Consider (set x (apply + x 1)) when x is affine
-        # TODO Should this check even be here! I mean, maybe?
-        if env.get_bind_val(target_loc) is None:
-            raise LinAffineVariableReuseError
-        target_loc_t = env.get_bind_val(target_loc)
-        setform_t = cls.type_check(env, new_def)
-        if target_loc_t.type_enum != lang.T_cat.ref:
-            raise RuntimeError("Attempting to set a non-reference!")
-        elif not subtype(setform_t, target_loc_t.type_args):
-            raise TypeMismatchError("Attempting to set to the wrong thing!")
-        else:
-            # TODO I'm not sure what to do here... It's getting a bit late :<
-            # I think I need to manually add the statement that target_loc: def_type back in
-            return target_loc_t.type_args
-
-    @classmethod
-    def check_apply(cls, env: Env, fname, *fargs):
+    def check_apply(cls, env: TypeCheckEnv, fname, *fargs):
         ftype = cls.type_check(env, fname)
-        fsig_ret_t, fsig_arg_t_ls = ftype.type_args
+        assert isinstance(ftype, dslT.FunType)
+        fsig_arg_t_ls = ftype.argTs
 
         actual_arg_t_ls = ()
         for arg_name in fargs:
-            actual_arg_t_ls += (cls.type_check(env, arg_name),)
+            actual_arg_t_ls += (cls.type_check(env, arg_name, being_bound=True),)
 
         if len(actual_arg_t_ls) != len(fsig_arg_t_ls):
             raise RuntimeError("Didn't pass in right number of arguments!")
-        for i in range(len(actual_arg_t_ls)):
-            if not subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
-                raise TypeMismatchError(
-                    f'Argument {i} expected to be {ftype.type_args[1][i]}, got {actual_arg_t_ls[i]}')
 
-        return fsig_ret_t
+        for i, (actual_argT, sigT) in enumerate(zip(actual_arg_t_ls, ftype.argTs)):
+            if not dslT.Type.is_subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
+                raise TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
+
+        return ftype.retT
 
     @classmethod
-    def check_sequential(cls, env: Env, prog_ls):
+    def check_sequential(cls, env: TypeCheckEnv, prog_ls):
         ret_type = None
         for p in prog_ls:
             ret_type = cls.type_check(env, p)
@@ -144,9 +146,11 @@ class AffineTypeChecker:
         return ret_type
 
     @classmethod
-    def type_check(cls, env: Env, prog: Union[Tuple, str], descope: bool = False) -> lang.Type:
+    def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],
+                   descope: bool = False, being_bound: bool = False) -> dslT.Type:
         """
         Given a context Gamma and program tree, type-check it (modifying gamma along the way)
+        :param being_bound: Don't allow orphaning of linear types, essentially
         :param descope:
         :param env:
         :param prog:
@@ -163,7 +167,6 @@ class AffineTypeChecker:
             "set": cls.check_set,
             "apply": cls.check_apply
         }
-        ret = None
 
         if not (isinstance(prog, tuple)):
             ret = cls.check_atomic(env, prog)
@@ -178,10 +181,7 @@ class AffineTypeChecker:
 
         if descope:
             err_on_unused_lins(env)
+        if (not being_bound) and (ret.is_lin()):
+            raise UnusedLinVariableError()
 
         return ret
-
-
-def subtype(t1, t2):
-    # TODO We should be able to use this to say that affine<T> is subtype of un<T>
-    return t1 == t2
