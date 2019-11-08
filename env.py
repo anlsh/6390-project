@@ -73,7 +73,7 @@ class Env:
         val, defining_env = self.get_bind(name)
         return val
 
-    def set_bind_val(self, name: str, val: Any,) -> None:
+    def set_bind_val(self, name: str, val: Any,):
         _, defining_env = self.get_bind(name)
         defining_env.bindings[name] = val, defining_env
 
@@ -91,7 +91,7 @@ class TypeCheckEnv(Env):
         return super().define_bind(name=name, val=val)
 
     def get_bind(self, name: str) -> Tuple[Type, Env]:
-        return super().get_bind_val(name=name)
+        return super().get_bind(name=name)
 
     def get_bind_val(self, name: str) -> Type:
         return super().get_bind_val(name=name)
