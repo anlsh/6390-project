@@ -31,30 +31,51 @@ class Tcat(Enum):
     ref = 'ref'
 
 
+class Town(Enum):
+    own = 'own'
+    borrow = 'borrow'
+
+
 class Type:
     def __init__(self, *,
                  category, mod, args):
-        self.__mod = mod
-        self.__type_args = args
-        self.__category = category
+        self._mod = mod
+        self._type_args = args
+        self._category = category
+
+        self._ownership = Town.own
 
     def __eq__(self, other):
         assert isinstance(other, Type)
-        return (self.__mod == other.__mod) and (self.__category == other.__category) \
-               and (self.__type_args == other.__type_args)
+        return (self._mod == other._mod) and (self._category == other._category) \
+               and (self._type_args == other._type_args)
+
+    def set_borrow(self,):
+        if self._ownership == Town.borrow:
+            raise RuntimeError("Attempting to borrow from a borrowed value!")
+        self._ownership = Town.borrow
+
+    def set_own(self,):
+        self._ownership = Town.own
+
+    def is_borrow(self,) -> bool:
+        return self._ownership == Town.borrow
+
+    def is_own(self,) -> bool:
+        return not self.is_borrow()
 
     def is_val(self, ) -> bool:
-        return self.__category == Tcat.val
+        return self._category == Tcat.val
 
     def is_fun(self, ) -> bool:
-        return self.__category == Tcat.fun
+        return self._category == Tcat.fun
 
     def is_ref(self, ) -> bool:
-        return self.__category == Tcat.ref
+        return self._category == Tcat.ref
 
     @property
     def tmod(self, ):
-        return self.__mod
+        return self._mod
 
     def is_lin(self, ) -> bool:
         return self.tmod == Tmod.lin
@@ -69,8 +90,7 @@ class Type:
     def is_subtype(cls, t1, t2):
 
         if isinstance(t1, str) or isinstance(t2, str):
-            if t1 != t2:
-                return False
+            return t1 == t2
 
         assert isinstance(t1, Type)
         assert isinstance(t2, Type)
@@ -78,12 +98,12 @@ class Type:
         if not Tmod.less_restrictive(t1.tmod, t2.tmod):
             return False
 
-        elif t1.__category != t2.__category:
+        elif t1._category != t2._category:
             return False
 
         elif t1.is_fun():
-            self_ret_t, self_args_t = t1.__type_args
-            other_ret_t, other_args_t = t2.__type_args
+            self_ret_t, self_args_t = t1._type_args
+            other_ret_t, other_args_t = t2._type_args
 
             if not cls.is_subtype(self_ret_t, other_ret_t):
                 return False
@@ -96,26 +116,26 @@ class Type:
             return True
 
         elif t1.is_ref():
-            return cls.is_subtype(t1.__type_args, t2.__type_args) \
-                   and cls.is_subtype(t2.__type_args, t1.__type_args)
+            return cls.is_subtype(t1._type_args, t2._type_args) \
+                   and cls.is_subtype(t2._type_args, t1._type_args)
 
         elif t1.is_val():
-            return cls.is_subtype(t1.__type_args, t2.__type_args)
+            return cls.is_subtype(t1._type_args, t2._type_args)
 
 
 class FunType(Type):
     def __init__(self, *args, mod, retT, argTs):
         super().__init__(*args,
                          category=Tcat.fun, mod=mod,
-                         args=(retT, argT_tuple))
+                         args=(retT, argTs))
 
     @property
     def retT(self,) -> Type:
-        return self.__type_args[0]
+        return self._type_args[0]
 
     @property
     def argTs(self) -> Tuple[Type]:
-        return self.__type_args[1]
+        return self._type_args[1]
 
 
 class ValType(Type):
@@ -144,9 +164,10 @@ def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:
         ret_t = tparse(ret_tprog)
         arg_t_ls = tuple(tparse(a) for a in arg_tprog_ls)
 
-        return FunType(mod=mod, args=(ret_t, arg_t_ls))
-
-    elif (enum == Tcat.ref) or (enum == Tcat.val):
+        return FunType(mod=mod, retT=ret_t, argTs=arg_t_ls)
+    elif enum == Tcat.ref:
         return RefType(mod=mod, args=tparse(args))
+    elif enum == Tcat.val:
+        return ValType(mod=mod, args=tparse(args))
     else:
         raise RuntimeError(f"Unrecognized type code {enum}: Should be one of (ref, fun, val)")

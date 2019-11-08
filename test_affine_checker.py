@@ -1,6 +1,7 @@
 import pytest
 import language as lang
 from affine_checker import AffineTypeChecker as ATC, TypeMismatchError, UnusedLinVariableError
+import dsl_types as dslT
 from env import Env, BindingRedefinitionError
 from parser import parse
 
@@ -14,7 +15,7 @@ def test_declare_variable(base_env):
     prog = parse("(defvar x (un val int) 3)")
     ret_type = ATC.type_check(base_env, prog)
     assert ret_type == lang.T_UNIT
-    assert base_env.get_bind_val('x') == lang.tparse(parse("(aff ref (un val int))"))
+    assert base_env.get_bind_val('x') == dslT.tparse(parse("(un val int)"))
 
 
 def test_plus_type_checks_correct_args(base_env):
@@ -43,14 +44,14 @@ def test_decl_var1(base_env):
 def test_decl_var2(base_env):
     prog = parse("((defvar x (un val int) 3) (set x 3))")
     T = ATC.type_check(base_env, prog)
-    assert T == lang.T_INT
+    assert T == lang.T_UNIT
 
 
 def test_decl_var3(base_env):
     # TODO Should we be able to set multiple values like this?
     prog = parse("((defvar x (un val int) 3) (set x 3) (set x 4))")
     T = ATC.type_check(base_env, prog)
-    assert T == lang.T_INT
+    assert T == lang.T_UNIT
     # assert ctx['x'] == lang.tparse(parse("(aff ref (un val int))"))
 
 
@@ -58,7 +59,7 @@ def test_decl_var4(base_env):
     # TODO Do we need to care about this?
     prog = parse("((defvar x (un val int) 3) (set x 3) (set x (+ x 1)))")
     T = ATC.type_check(base_env, prog)
-    assert T == lang.T_INT
+    assert T == lang.T_UNIT
     # assert ctx['x'] == tparse(parse("(aff ref (un val int))"))
 
 
