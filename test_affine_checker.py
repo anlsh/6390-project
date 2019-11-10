@@ -3,7 +3,7 @@ import language as lang
 import typecheck_errors as tc_err
 from affine_checker import AffineTypeChecker as ATC
 import dsl_types as dslT
-from env import TypeCheckEnv
+from env import TypeCheckEnv, deepcopy_env
 from env import BindingRedefinitionError
 from dsl_parser import dsl_parse
 
@@ -159,7 +159,7 @@ def test_twouse_affint_errs():
     # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (aff val int) 3) x x)")
     with pytest.raises(tc_err.LinAffineVariableReuseError):
-        T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+        ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_if1():
@@ -187,3 +187,14 @@ def test_if_lin2():
     prog = dsl_parse("((defvar x (lin val int) 3) (if true ((apply + x 1) (apply + x 1)) (apply + x 2)))")
     with pytest.raises(tc_err.LinAffineVariableReuseError):
         T = ATC.type_check(base_tcheck_env(), prog, descope=False)
+
+def test_env_copy_works():
+    prog = dsl_parse("(  "
+                     "    (defvar x (un val int) 0) "
+                     "    (defvar y (un val int) 0)  "
+                     "    (while (x < 3) (set x (apply + x 1)))"
+                     ")")
+    env = base_tcheck_env()
+    T = ATC.type_check(env, prog, descope=False)
+    env_cp = deepcopy_env(env)
+    assert env == env_cp
