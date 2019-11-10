@@ -152,7 +152,10 @@ class AffineTypeChecker:
         return then_type
 
     @classmethod
-    def check_while(cls, env: TypeCheckEnv, body):
+    def check_while(cls, env: TypeCheckEnv, test, default, body):
+        test_type = cls.type_check(env, test)
+        if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
+            raise TypeMismatchError("While statement conditional was not of type bool.")
         old_env = deepcopy_env(env)
         body_type = cls.type_check(env, body)
         if not env == old_env:
