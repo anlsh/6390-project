@@ -153,7 +153,7 @@ class AffineTypeChecker:
 
     @classmethod
     def check_while(cls, env: TypeCheckEnv, body):
-        old_env = copy(env)
+        old_env = deepcopy_env(env)
         body_type = cls.type_check(env, body)
         if not env == old_env:
             raise TypeMismatchError("While body illegally modifies environment")
@@ -181,7 +181,8 @@ class AffineTypeChecker:
             "dref": cls.check_dref,
             "set": cls.check_set,
             "apply": cls.check_apply,
-            "if": cls.check_if
+            "if": cls.check_if,
+            "while": cls.check_while
         }
 
         if not (isinstance(prog, tuple)):

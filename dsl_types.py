@@ -20,11 +20,6 @@ class Tmod(Enum):
         return cls.restriction_hierarchy().index(a) <= cls.restriction_hierarchy().index(b)
 
 
-class Toship(Enum):
-    own = 'own'
-    borrow = 'borrow'
-
-
 class Tcat(Enum):
     val = 'val'
     fun = 'fun'

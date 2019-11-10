@@ -127,6 +127,7 @@ def deepcopy_env(env: Env,) -> Env:
 
         outer_copy = __deepcopy_env(env.outer, env2copy=env2copy)
         env2copy[env] = deepcopy(env)
+        env2copy[env].outer = outer_copy
         env2copy[env].bindings = {}
 
         for k in env.bindings:

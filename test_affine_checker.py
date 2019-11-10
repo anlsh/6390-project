@@ -162,7 +162,22 @@ def test_twouse_affint_errs():
         T = ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
-def test_if():
+def test_if1():
     prog = dsl_parse("(if true (defvar x (un val int) 3) x)")
     with pytest.raises(tc_err.BindingUndefinedError):
         T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+
+def test_if2():
+    prog = dsl_parse("((defvar x (un val int) 3) (if true (set x (+ x 1)) (set x (- x 1))))")
+    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+
+def test_if_lin():
+    prog = dsl_parse("((defvar x (lin val int) 3) (if true x (set x (- x 1))))")
+    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+
+def test_while():
+    prog = dsl_parse("((defvar x (un val int) 0) while (x < 3) (set x (+ x 1))")
+    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
