@@ -139,8 +139,8 @@ class AffineTypeChecker:
     def check_if(cls, env: TypeCheckEnv, test, then_body, else_body):
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
-            raise TypeMismatchError("If test was not of type bool.")
-        new_env_then = TypeCheckEnv(outer=deepcopy(env))
+            raise TypeMismatchError("If statement conditional was not of type bool.")
+        new_env_then = TypeCheckEnv(outer=copy(env))
         new_env_else = TypeCheckEnv(outer=env)
         # TODO Confirm that this works
         if not new_env_then.outer == env:
@@ -151,6 +151,15 @@ class AffineTypeChecker:
             raise TypeMismatchError("Then body type does not equal else body type.")
 
         return then_type
+
+    @classmethod
+    def check_while(cls, env: TypeCheckEnv, body):
+        old_env = copy(env)
+        body_type = cls.type_check(env, body)
+        if not env == old_env:
+            raise TypeMismatchError("While body illegally modifies environment")
+
+        return body_type
 
     @classmethod
     def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],

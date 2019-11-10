@@ -20,7 +20,7 @@ class Env:
         self.outer = outer
         for k in (defaults or []):
             self.define_bind(k, defaults[k])
-            
+
 
     def contains_bind(self, name: str) -> bool:
         """
