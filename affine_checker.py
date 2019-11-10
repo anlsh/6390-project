@@ -5,6 +5,7 @@ from typing import Tuple, Union
 
 from env import TypeCheckEnv
 from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError
+from copy import deepcopy
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -135,6 +136,23 @@ class AffineTypeChecker:
         return ret_type
 
     @classmethod
+    def check_if(cls, env: TypeCheckEnv, test, then_body, else_body):
+        test_type = cls.type_check(env, test)
+        if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
+            raise TypeMismatchError("If test was not of type bool.")
+        new_env_then = TypeCheckEnv(outer=deepcopy(env))
+        new_env_else = TypeCheckEnv(outer=env)
+        # TODO Confirm that this works
+        if not new_env_then.outer == env:
+            raise TypeMismatchError("Env copy is wack.")
+        then_type = cls.type_check(new_env_then, then_body, descope=True)
+        else_type = cls.type_check(new_env_else, else_body, descope=True)
+        if not then_type == else_type:
+            raise TypeMismatchError("Then body type does not equal else body type.")
+
+        return then_type
+
+    @classmethod
     def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],
                    descope: bool = False, being_bound: bool = False) -> dslT.Type:
         """
@@ -154,7 +172,8 @@ class AffineTypeChecker:
             "ref": cls.check_ref,
             "dref": cls.check_dref,
             "set": cls.check_set,
-            "apply": cls.check_apply
+            "apply": cls.check_apply,
+            "if": cls.check_if
         }
 
         if not (isinstance(prog, tuple)):

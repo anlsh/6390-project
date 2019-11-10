@@ -8,3 +8,11 @@ class LinAffineVariableReuseError(RuntimeError):
 
 class UnusedLinVariableError(RuntimeError):
     pass
+
+
+class BindingUndefinedError(Exception):
+    pass
+
+
+class BindingRedefinitionError(Exception):
+    pass

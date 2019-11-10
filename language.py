@@ -13,6 +13,7 @@ builtin_fn_vals = {
 T_NIL = ValType(mod=Tmod.un, args='nil')
 T_UNIT = ValType(mod=Tmod.un, args='unit')
 T_BOOL = ValType(mod=Tmod.un, args='bool')
+T_LIN_BOOL = ValType(mod=Tmod.lin, args='bool')
 
 T_INT = ValType(mod=Tmod.un, args='int')
 T_LIN_INT = ValType(mod=Tmod.lin, args='int')

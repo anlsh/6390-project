@@ -1,14 +1,7 @@
 from typing import Any
 from typing import Tuple
 from dsl_types import Type
-
-
-class BindingUndefinedError(Exception):
-    pass
-
-
-class BindingRedefinitionError(Exception):
-    pass
+from typecheck_errors import BindingRedefinitionError, BindingUndefinedError
 
 
 class Env:
@@ -27,6 +20,7 @@ class Env:
         self.outer = outer
         for k in (defaults or []):
             self.define_bind(k, defaults[k])
+            
 
     def contains_bind(self, name: str) -> bool:
         """
