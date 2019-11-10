@@ -12,6 +12,18 @@ def base_tcheck_env():
     return TypeCheckEnv(outer=TypeCheckEnv(defaults=lang.builtin_fn_types))
 
 
+def test_env_copy_works():
+    prog = dsl_parse("(  "
+                     "    (defvar x (un val int) 0) "
+                     "    (defvar y (un val int) 0)  "
+                     "    (while (apply < x 3) 0 (set x (apply + x 1)))"
+                     ")")
+    env = base_tcheck_env()
+    T = ATC.type_check(env, prog, descope=False)
+    env_cp = deepcopy_env(env)
+    assert env == env_cp
+
+
 def test_unrestricted_variables():
 
     # Declaring an unrestricted value works...
@@ -116,23 +128,23 @@ def test_decl_var1():
 
 def test_decl_var2():
     prog = dsl_parse("((defvar x (un val int) 3) (set x 3))")
-    T = ATC.type_check(base_tcheck_env(), prog)
-    assert T == lang.T_UNIT
+    t = ATC.type_check(base_tcheck_env(), prog)
+    assert t == lang.T_UNIT
 
 
 def test_decl_var3():
     # TODO Should we be able to set multiple values like this?
     prog = dsl_parse("((defvar x (un val int) 3) (set x 3) (set x 4))")
-    T = ATC.type_check(base_tcheck_env(), prog)
-    assert T == lang.T_UNIT
+    t = ATC.type_check(base_tcheck_env(), prog)
+    assert t == lang.T_UNIT
     # assert ctx['x'] == lang.tparse(parse("(aff ref (un val int))"))
 
 
 def test_decl_var4():
     # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (un val int) 3) (set x 3) (set x (+ x 1)))")
-    T = ATC.type_check(base_tcheck_env(), prog)
-    assert T == lang.T_UNIT
+    t = ATC.type_check(base_tcheck_env(), prog)
+    assert t == lang.T_UNIT
     # assert ctx['x'] == tparse(parse("(aff ref (un val int))"))
 
 
@@ -140,19 +152,19 @@ def test_unused_linint_errs():
     # TODO Do we need to care about this?
     prog = dsl_parse("(defvar x (lin val int) 3)")
     with pytest.raises(tc_err.UnusedLinVariableError):
-        T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+        ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_unused_affint_fine():
     # TODO Do we need to care about this?
     prog = dsl_parse("(defvar x (aff val int) 3)")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_oneuse_affint_fine():
     # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (aff val int) 3) x)")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_twouse_affint_errs():
@@ -165,37 +177,25 @@ def test_twouse_affint_errs():
 def test_if1():
     prog = dsl_parse("(if true (defvar x (un val int) 3) x)")
     with pytest.raises(tc_err.BindingUndefinedError):
-        T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+        ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_if2():
     prog = dsl_parse("((defvar x (un val int) 3) (if true (set x (apply + x 1)) (set x (apply - x 1))))")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_if_lin():
     prog = dsl_parse("((defvar x (lin val int) 3) (if true (set x (apply + x 1)) (set x 0)))")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
-
-
-def test_while():
-    prog = dsl_parse("((defvar x (un val int) 0) (while (apply < x 3) -2 (set x (apply + x 1))))")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=False)
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_if_lin2():
     prog = dsl_parse("((defvar x (lin val int) 3) (if true ((apply + x 1) (apply + x 1)) (apply + x 2)))")
     with pytest.raises(tc_err.LinAffineVariableReuseError):
-        T = ATC.type_check(base_tcheck_env(), prog, descope=False)
+        ATC.type_check(base_tcheck_env(), prog,)
 
 
-def test_env_copy_works():
-    prog = dsl_parse("(  "
-                     "    (defvar x (un val int) 0) "
-                     "    (defvar y (un val int) 0)  "
-                     "    (while (apply < x 3) 0 (set x (apply + x 1)))"
-                     ")")
-    env = base_tcheck_env()
-    T = ATC.type_check(env, prog, descope=False)
-    env_cp = deepcopy_env(env)
-    assert env == env_cp
+def test_while():
+    prog = dsl_parse("((defvar x (un val int) 0) (while (apply < x 3) -2 (set x (apply + x 1))))")
+    ATC.type_check(base_tcheck_env(), prog, descope=False)
