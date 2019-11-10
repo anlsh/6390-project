@@ -4,18 +4,7 @@ import dsl_types as dslT
 from typing import Tuple, Union
 
 from env import TypeCheckEnv
-
-
-class TypeMismatchError(RuntimeError):
-    pass
-
-
-class LinAffineVariableReuseError(RuntimeError):
-    pass
-
-
-class UnusedLinVariableError(RuntimeError):
-    pass
+from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -23,7 +12,7 @@ def err_on_unused_lins(env: TypeCheckEnv):
         if env.get_bind_val(name) is None:
             continue
         name_t = env.get_bind_val(name)
-        if name_t.is_lin():
+        if name_t.is_lin() and name_t.is_own():
             raise UnusedLinVariableError
 
 

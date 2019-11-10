@@ -13,10 +13,12 @@ builtin_fn_vals = {
 T_NIL = ValType(mod=Tmod.un, args='nil')
 T_UNIT = ValType(mod=Tmod.un, args='unit')
 T_BOOL = ValType(mod=Tmod.un, args='bool')
+
 T_INT = ValType(mod=Tmod.un, args='int')
+T_LIN_INT = ValType(mod=Tmod.lin, args='int')
 
 builtin_fn_types = {
-        "+": FunType(mod=Tmod.un, retT=T_INT, argTs=(T_INT, T_INT)),
-        "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_BOOL,))
+    "+": FunType(mod=Tmod.un, retT=T_INT, argTs=(T_LIN_INT, T_LIN_INT)),
+    "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_BOOL,)),
 }
 
