@@ -34,6 +34,8 @@ class Env:
             if self_def_env is self:
                 if other_def_env is not other:
                     return False
+                if self_val != other_val:
+                    return False
             else:
                 if (self_val, self_def_env) != (other_val, other_def_env):
                     return False
