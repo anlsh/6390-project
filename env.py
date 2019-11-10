@@ -77,7 +77,7 @@ class Env:
         :return:
         """
         if not self.contains_bind(name):
-            raise BindingUndefinedError
+            raise BindingUndefinedError(f'{name} is undefined')
         else:
             if name in self.bindings:
                 return self.bindings[name]
