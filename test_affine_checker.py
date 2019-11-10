@@ -188,11 +188,12 @@ def test_if_lin2():
     with pytest.raises(tc_err.LinAffineVariableReuseError):
         T = ATC.type_check(base_tcheck_env(), prog, descope=False)
 
+
 def test_env_copy_works():
     prog = dsl_parse("(  "
                      "    (defvar x (un val int) 0) "
                      "    (defvar y (un val int) 0)  "
-                     "    (while (x < 3) (set x (apply + x 1)))"
+                     "    (while (apply < x 3) 0 (set x (apply + x 1)))"
                      ")")
     env = base_tcheck_env()
     T = ATC.type_check(env, prog, descope=False)
