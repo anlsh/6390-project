@@ -4,7 +4,8 @@ import dsl_types as dslT
 from typing import Tuple, Union
 
 from env import TypeCheckEnv, deepcopy_env
-from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError
+from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError, \
+    EnvironmentMismatchError
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -105,6 +106,8 @@ class AffineTypeChecker:
         if not dslT.Type.is_subtype(setform_t, place_sig_t):
             raise TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
         else:
+            # TODO Think this is justfied, but double-check
+            env.get_bind_val(target_loc).set_own()
             return lang.T_UNIT
 
     @classmethod
@@ -139,14 +142,17 @@ class AffineTypeChecker:
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
             raise TypeMismatchError("If statement conditional was not of type bool.")
+
         new_env_then = TypeCheckEnv(outer=deepcopy_env(env))
         new_env_else = TypeCheckEnv(outer=env)
-        # TODO Confirm that this works
-        if not new_env_then.outer == env:
-            raise TypeMismatchError("Env copy is wack.")
         then_type = cls.type_check(new_env_then, then_body, descope=True)
         else_type = cls.type_check(new_env_else, else_body, descope=True)
-        if not then_type == else_type:
+
+        # TODO Confirm that this works
+        if new_env_then.outer != env:
+            raise EnvironmentMismatchError("Branches of if statement produce different environments")
+
+        if then_type != else_type:
             raise TypeMismatchError("Then body type does not equal else body type.")
 
         return then_type
@@ -157,11 +163,21 @@ class AffineTypeChecker:
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
             raise TypeMismatchError("While statement conditional was not of type bool.")
         old_env = deepcopy_env(env)
-        body_type = cls.type_check(env, body)
-        if not env == old_env:
-            raise TypeMismatchError("While body illegally modifies environment")
 
-        return body_type
+        new_env_def = TypeCheckEnv(outer=deepcopy_env(env))
+        new_env_bod = TypeCheckEnv(outer=env)
+        def_type = cls.type_check(new_env_def, default, descope=True)
+        bod_type = cls.type_check(new_env_bod, body, descope=True)
+
+        if new_env_def.outer != old_env:
+            raise EnvironmentMismatchError("Default clause illegally modifies environment")
+        elif new_env_bod.outer != old_env:
+            raise EnvironmentMismatchError("Body clause illegally modifies environment")
+
+        if not def_type == bod_type:
+            raise TypeMismatchError("Default and Body clauses return values of different types")
+
+        return def_type
 
     @classmethod
     def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],

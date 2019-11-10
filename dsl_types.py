@@ -43,7 +43,7 @@ class Type:
     def __eq__(self, other):
         assert isinstance(other, Type)
         return (self._mod == other._mod) and (self._category == other._category) \
-               and (self._type_args == other._type_args)
+            and (self._type_args == other._type_args) and (self._ownership == other._ownership)
 
     def set_borrow(self,):
         if self._ownership == Town.borrow:

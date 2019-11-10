@@ -16,3 +16,7 @@ class BindingUndefinedError(Exception):
 
 class BindingRedefinitionError(Exception):
     pass
+
+
+class EnvironmentMismatchError(Exception):
+    pass
