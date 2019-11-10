@@ -2,6 +2,8 @@ from typing import Any
 from typing import Tuple
 from dsl_types import Type
 from typecheck_errors import BindingRedefinitionError, BindingUndefinedError
+from copy import deepcopy
+from typing import Union
 
 
 class Env:
@@ -20,7 +22,6 @@ class Env:
         self.outer = outer
         for k in (defaults or []):
             self.define_bind(k, defaults[k])
-
 
     def contains_bind(self, name: str) -> bool:
         """
@@ -92,3 +93,28 @@ class TypeCheckEnv(Env):
 
     def set_bind_val(self, name: str, val: Type,) -> None:
         return super().set_bind_val(name=name, val=val)
+
+
+def deepcopy_env(env: Env,) -> Env:
+    def __deepcopy_env(env: Env, *, env2copy: dict = None) -> Union[None, Env]:
+
+        if env is None:
+            return None
+        elif env2copy is None:
+            env2copy = {}
+        elif env in env2copy:
+            return env2copy[env]
+
+        outer_copy = __deepcopy_env(env.outer, env2copy=env2copy)
+        env2copy[env] = Env(outer=outer_copy)
+
+        for k in env.bindings:
+            val, def_env = env.bindings[k]
+            val = deepcopy(val)
+            def_env = __deepcopy_env(def_env, env2copy=env2copy)
+
+            env2copy[env].bindings[k] = val, def_env
+
+        return env2copy[env]
+
+    return __deepcopy_env(env, env2copy={})

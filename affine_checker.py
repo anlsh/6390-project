@@ -3,9 +3,8 @@ import language as lang
 import dsl_types as dslT
 from typing import Tuple, Union
 
-from env import TypeCheckEnv
+from env import TypeCheckEnv, deepcopy_env
 from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError
-from copy import deepcopy
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -140,7 +139,7 @@ class AffineTypeChecker:
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
             raise TypeMismatchError("If statement conditional was not of type bool.")
-        new_env_then = TypeCheckEnv(outer=copy(env))
+        new_env_then = TypeCheckEnv(outer=deepcopy_env(env))
         new_env_else = TypeCheckEnv(outer=env)
         # TODO Confirm that this works
         if not new_env_then.outer == env:
