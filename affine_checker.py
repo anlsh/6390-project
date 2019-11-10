@@ -107,7 +107,10 @@ class AffineTypeChecker:
             raise TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
         else:
             # TODO Think this is justfied, but double-check
-            env.get_bind_val(target_loc).set_own()
+            if place_sig_t.is_borrow():
+                env.get_bind_val(target_loc).set_own()
+            elif place_sig_t.is_own() and place_sig_t.is_lin():
+                raise TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
             return lang.T_UNIT
 
     @classmethod
