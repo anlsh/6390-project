@@ -186,7 +186,7 @@ def test_if2():
 
 
 def test_if_lin():
-    prog = dsl_parse("((defvar x (lin val int) 3) (if true (set x (apply + x 1)) (set x 0)))")
+    prog = dsl_parse("((defvar x (lin val int) 3) (if true (set x (apply + x 1)) (set x 0)) (apply + x 1))")
     ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
