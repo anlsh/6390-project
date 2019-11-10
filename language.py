@@ -20,6 +20,7 @@ T_LIN_INT = ValType(mod=Tmod.lin, args='int')
 
 builtin_fn_types = {
     "+": FunType(mod=Tmod.un, retT=T_INT, argTs=(T_LIN_INT, T_LIN_INT)),
+    "-": FunType(mod=Tmod.un, retT=T_INT, argTs=(T_LIN_INT, T_LIN_INT)),
     "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_BOOL,)),
 }
 
