@@ -169,15 +169,21 @@ def test_if1():
 
 
 def test_if2():
-    prog = dsl_parse("((defvar x (un val int) 3) (if true (set x (+ x 1)) (set x (- x 1))))")
+    prog = dsl_parse("((defvar x (un val int) 3) (if true (set x (apply + x 1)) (set x (apply - x 1))))")
     T = ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_if_lin():
-    prog = dsl_parse("((defvar x (lin val int) 3) (if true x (set x (- x 1))))")
-    T = ATC.type_check(base_tcheck_env(), prog, descope=True)
+    prog = dsl_parse("((defvar x (lin val int) 3) (if true (apply + x 1) (apply + x 2)))")
+    T = ATC.type_check(base_tcheck_env(), prog, descope=False)
+
+
+def test_if_lin2():
+    prog = dsl_parse("((defvar x (lin val int) 3) (if true ((apply + x 1) (apply + x 1)) (apply + x 2)))")
+    with pytest.raises(tc_err.LinAffineVariableReuseError):
+        T = ATC.type_check(base_tcheck_env(), prog, descope=False)
 
 
 def test_while():
-    prog = dsl_parse("((defvar x (un val int) 0) while (x < 3) (set x (+ x 1))")
+    prog = dsl_parse("((defvar x (un val int) 0) (while (x < 3) (set x (apply + x 1)))")
     T = ATC.type_check(base_tcheck_env(), prog, descope=True)
