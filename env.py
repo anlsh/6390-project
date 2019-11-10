@@ -23,6 +23,26 @@ class Env:
         for k in (defaults or []):
             self.define_bind(k, defaults[k])
 
+    def __eq__(self, other):
+        if self.outer != other.outer:
+            return False
+
+        for k in self.bindings:
+            self_val, self_def_env = self.bindings[k]
+            other_val, other_def_env = other.bindings[k]
+
+            if self_def_env is self:
+                if other_def_env is not other:
+                    return False
+            else:
+                if (self_val, self_def_env) != (other_val, other_def_env):
+                    return False
+
+        return True
+
+    def __hash__(self):
+        return id(self)
+
     def contains_bind(self, name: str) -> bool:
         """
         Check if the current env or any of its parents have a binding for name
@@ -106,7 +126,8 @@ def deepcopy_env(env: Env,) -> Env:
             return env2copy[env]
 
         outer_copy = __deepcopy_env(env.outer, env2copy=env2copy)
-        env2copy[env] = Env(outer=outer_copy)
+        env2copy[env] = deepcopy(env)
+        env2copy[env].bindings = {}
 
         for k in env.bindings:
             val, def_env = env.bindings[k]
