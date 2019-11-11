@@ -205,3 +205,4 @@ def test_if_lin3():
 def test_while():
     prog = dsl_parse("((defvar x (un val int) 0) (while (apply < x 3) -2 ((set x (apply + x 1)) x)))")
     ATC.type_check(base_tcheck_env(), prog, descope=False)
+

@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 from env import TypeCheckEnv, deepcopy_env
 from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError, \
-    EnvironmentMismatchError
+    EnvironmentMismatchError, BorrowedValueUseError
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -87,9 +87,12 @@ class AffineTypeChecker:
     # TODO Implement the whole shebang on references... Seriously wtf are these things...
 
     @classmethod
-    def check_mkref(cls, env: TypeCheckEnv, ref_name, ref_thing):
-        thing_type = cls.type_check(env, ref_thing)
-        return dslT.RefType(dslT.Tcat.ref, lang.Tmod.aff, thing_type)
+    def check_mkref(cls, env: TypeCheckEnv, ref_thing):
+        ref_type = env.get_bind_val(ref_thing)
+        if not ref_type.is_own():
+            raise BorrowedValueUseError(f"Attempted to use borrowed value {ref_thing}")
+        ref_type.set_borrow()
+        return dslT.RefType(mod=lang.Tmod.aff, ref_type=ref_type)
 
     @classmethod
     def check_set_ref(cls, env: TypeCheckEnv, ref_name, new_ref_thing):

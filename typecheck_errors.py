@@ -20,3 +20,7 @@ class BindingRedefinitionError(Exception):
 
 class EnvironmentMismatchError(Exception):
     pass
+
+
+class BorrowedValueUseError(RuntimeError):
+    pass

@@ -119,10 +119,8 @@ class Type:
 
 
 class FunType(Type):
-    def __init__(self, *args, mod, retT, argTs):
-        super().__init__(*args,
-                         category=Tcat.fun, mod=mod,
-                         args=(retT, argTs))
+    def __init__(self, mod: Tmod, retT: Type, argTs):
+        super().__init__(category=Tcat.fun, mod=mod, args=(retT, argTs))
 
     @property
     def retT(self,) -> Type:
@@ -134,13 +132,13 @@ class FunType(Type):
 
 
 class ValType(Type):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, category=Tcat.val, **kwargs)
+    def __init__(self, mod: Tmod, tname):
+        super().__init__(mod=mod, category=Tcat.val, args=tname)
 
 
 class RefType(Type):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, category=Tcat.ref, **kwargs)
+    def __init__(self, mod: Tmod, ref_type: Type):
+        super().__init__(mod=mod, category=Tcat.ref, args=ref_type)
 
 
 def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:
@@ -161,8 +159,8 @@ def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:
 
         return FunType(mod=mod, retT=ret_t, argTs=arg_t_ls)
     elif enum == Tcat.ref:
-        return RefType(mod=mod, args=tparse(args))
+        return RefType(mod=mod, ref_type=tparse(args))
     elif enum == Tcat.val:
-        return ValType(mod=mod, args=tparse(args))
+        return ValType(mod=mod, tname=tparse(args))
     else:
         raise RuntimeError(f"Unrecognized type code {enum}: Should be one of (ref, fun, val)")
