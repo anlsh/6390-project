@@ -95,7 +95,7 @@ class AffineTypeChecker:
         return dslT.RefType(mod=lang.Tmod.aff, ref_type=ref_type)
 
     @classmethod
-    def check_set_ref(cls, env: TypeCheckEnv, ref_name, new_def):
+    def check_setref(cls, env: TypeCheckEnv, ref_name, new_def):
         ref_type = env.get_bind_val(ref_name)
         if not isinstance(ref_type, dslT.RefType):
             raise RuntimeError("Attempted to use set reference on a non-reference!")
@@ -211,8 +211,8 @@ class AffineTypeChecker:
         macro_tcheck_fns = {
             "defvar": cls.check_defvar,
             "defun": cls.check_defun,
-            "ref": cls.check_ref,
-            "dref": cls.check_dref,
+            "setref": cls.check_setref,
+            "mkref": cls.check_mkref,
             "set": cls.check_set,
             "apply": cls.check_apply,
             "if": cls.check_if,
