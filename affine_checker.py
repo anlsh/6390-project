@@ -95,14 +95,20 @@ class AffineTypeChecker:
         return dslT.RefType(mod=lang.Tmod.aff, ref_type=ref_type)
 
     @classmethod
-    def check_set_ref(cls, env: TypeCheckEnv, ref_name, new_ref_thing):
+    def check_set_ref(cls, env: TypeCheckEnv, ref_name, new_def):
         ref_type = env.get_bind_val(ref_name)
-        if not ref_type.is_ref():
-            raise RuntimeError("Attempted to dereference something that's not a reference!")
-        thing_type = cls.type_check(env, new_ref_thing, being_bound=True)
-        if not dslT.Type.is_subtype(thing_type, ref_type):
-            raise TypeMismatchError(f"{ref_name} expects type {ref_type}, but got {thing_type}")
-        return thing_type
+        if not isinstance(ref_type, dslT.RefType):
+            raise RuntimeError("Attempted to use set reference on a non-reference!")
+
+        new_def_type = cls.type_check(env, new_def, being_bound=True)
+        if not new_def_type == ref_type.referenced_type():
+            raise TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
+                                    f"but set was attempted with {new_def_type}")
+
+        if ref_type.is_own() and ref_type.referenced_type().is_lin():
+            raise UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
+
+        return new_def_type
 
     @classmethod
     def check_set(cls, env: TypeCheckEnv, target_loc, new_def):

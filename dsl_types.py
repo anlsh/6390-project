@@ -140,6 +140,9 @@ class RefType(Type):
     def __init__(self, mod: Tmod, ref_type: Type):
         super().__init__(mod=mod, category=Tcat.ref, args=ref_type)
 
+    def referenced_type(self,) -> Type:
+        return self._type_args
+
 
 def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:
     """
