@@ -87,16 +87,19 @@ class AffineTypeChecker:
     # TODO Implement the whole shebang on references... Seriously wtf are these things...
 
     @classmethod
-    def check_ref(cls, env: TypeCheckEnv, referenced_thing):
-        thing_type = cls.type_check(env, referenced_thing)
-        return lang.Type(lang.Tmod.aff, lang.Tcat.ref, thing_type)
+    def check_mkref(cls, env: TypeCheckEnv, ref_name, ref_thing):
+        thing_type = cls.type_check(env, ref_thing)
+        return dslT.RefType(dslT.Tcat.ref, lang.Tmod.aff, thing_type)
 
     @classmethod
-    def check_dref(cls, env: TypeCheckEnv, thing):
-        thing_type = cls.type_check(env, thing)
-        if thing_type.type_enum != lang.Tcat.ref:
+    def check_set_ref(cls, env: TypeCheckEnv, ref_name, new_ref_thing):
+        ref_type = env.get_bind_val(ref_name)
+        if not ref_type.is_ref():
             raise RuntimeError("Attempted to dereference something that's not a reference!")
-        return thing_type.__type_args
+        thing_type = cls.type_check(env, new_ref_thing, being_bound=True)
+        if not dslT.Type.is_subtype(thing_type, ref_type):
+            raise TypeMismatchError(f"{ref_name} expects type {ref_type}, but got {thing_type}")
+        return thing_type
 
     @classmethod
     def check_set(cls, env: TypeCheckEnv, target_loc, new_def):
