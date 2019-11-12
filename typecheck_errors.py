@@ -24,3 +24,7 @@ class EnvironmentMismatchError(Exception):
 
 class BorrowedValueUseError(RuntimeError):
     pass
+
+
+class ReferenceNoEffectError(RuntimeError):
+    pass

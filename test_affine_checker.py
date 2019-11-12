@@ -12,6 +12,28 @@ def base_tcheck_env():
     return TypeCheckEnv(outer=TypeCheckEnv(defaults=lang.builtin_fn_types))
 
 
+def test_reference():
+    prog = dsl_parse("("
+                     "(defvar x (un val int) 0)"
+                     "(defvar xref (un ref (un val int)) (mkref x))"
+                     "xref"
+                     ")")
+    env = base_tcheck_env()
+    T = ATC.type_check(env, prog)
+    assert isinstance(T, dslT.RefType)
+    assert T.referenced_type() == lang.T_INT
+
+
+def test_reference_no_effect():
+    prog = dsl_parse("("
+                     "(defvar x (un val int) 0)"
+                     "(mkref x)"
+                     ")")
+    env = base_tcheck_env()
+    with pytest.raises(tc_err.ReferenceNoEffectError):
+        ATC.type_check(env, prog)
+
+
 def test_env_copy_works():
     prog = dsl_parse("(  "
                      "    (defvar x (un val int) 0) "
@@ -19,7 +41,7 @@ def test_env_copy_works():
                      "    (while (apply < x 3) 0 ((set x (apply + x 1)) x))"
                      ")")
     env = base_tcheck_env()
-    T = ATC.type_check(env, prog, descope=False)
+    ATC.type_check(env, prog, descope=False)
     env_cp = deepcopy_env(env)
     assert env == env_cp
 
