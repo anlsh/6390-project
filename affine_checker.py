@@ -75,10 +75,10 @@ class AffineTypeChecker:
     # TODO Implement the whole shebang on references... Seriously wtf are these things...
 
     @classmethod
-    def check_mkref(cls, env: TypeCheckEnv, ref_thing):
-        ref_type = env.get_bind_val(ref_thing)
+    def check_mkref(cls, env: TypeCheckEnv, var):
+        ref_type = env.get_bind_val(var)
         if not ref_type.is_own():
-            raise tc_err.BorrowedValueUseError(f"Attempted to use borrowed value {ref_thing}")
+            raise tc_err.BorrowedValueUseError(f"Attempted to make reference to {var}, which is currently borrowed")
         ref_type.set_borrow()
         return dslT.RefType(mod=lang.Tmod.un, ref_type=ref_type)
 
