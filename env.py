@@ -1,7 +1,7 @@
 from typing import Any
 from typing import Tuple
 from dsl_types import Type
-from typecheck_errors import BindingRedefinitionError, BindingUndefinedError
+from typecheck_errors import BindingRedefinitionError, BindingUndefinedError, DeallocatedEnvError
 from copy import deepcopy
 from typing import Union
 
@@ -20,6 +20,7 @@ class Env:
 
         self.bindings = {}
         self.outer = outer
+        self.allocated = True
         for k in (defaults or []):
             self.define_bind(k, defaults[k])
 
@@ -42,9 +43,20 @@ class Env:
 
         return True
 
+    # TODO Remedy this situation
+    def __requires_allocated(self, f):
+
+        def f_meth(*args, **kwargs):
+            if not self.allocated:
+                raise DeallocatedEnvError
+            return f(*args, **kwargs)
+
+        return f_meth
+
     def __hash__(self):
         return id(self)
 
+    @__requires_allocated
     def contains_bind(self, name: str) -> bool:
         """
         Check if the current env or any of its parents have a binding for name
@@ -56,6 +68,7 @@ class Env:
         else:
             return (self.outer is not None) and self.outer.contains_bind(name)
 
+    @__requires_allocated
     def define_bind(self, name: str, val: Any) -> None:
         """
         Create a binding with a given value, raising an error if the binding already exists
@@ -68,9 +81,11 @@ class Env:
         self.bindings[name] = None, self
         self.set_bind_val(name, val)
 
+    @__requires_allocated
     def get_toplevel_binds(self, ) -> Tuple:
         return tuple([name for name in self.bindings])
 
+    @__requires_allocated
     def get_bind(self, name: str) -> Tuple[Any, Any]:
         """
         Get a tuple (val, defining_env) given the name of a binding. defining_env is either the current Env or one
@@ -86,13 +101,22 @@ class Env:
             else:
                 return self.outer.get_bind(name)
 
+    @__requires_allocated
     def get_bind_val(self, name: str) -> Any:
         val, defining_env = self.get_bind(name)
         return val
 
+    @__requires_allocated
     def set_bind_val(self, name: str, val: Any,):
         _, defining_env = self.get_bind(name)
         defining_env.bindings[name] = val, defining_env
+
+    @__requires_allocated
+    def deallocate(self, name: str):
+        val, defining_env = self.get_bind(name)
+        if val.is_own():
+            defining_env.get_bind(name).set_own()
+        self.allocated = False
 
 
 class TypeCheckEnv(Env):
