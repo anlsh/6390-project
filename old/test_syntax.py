@@ -1,7 +1,6 @@
 import pytest
 
-from syntax import check_syntax
-from syntax_errors import *
+from old.syntax import check_syntax
 from dsl_parser import dsl_parse
 
 

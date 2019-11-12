@@ -1,10 +1,7 @@
 import pytest
 
-from language import *
-from interpreter import evaluate
+from old.interpreter import evaluate
 from dsl_parser import dsl_parse
-
-from syntax_errors import *
 
 
 def test_define_variable():

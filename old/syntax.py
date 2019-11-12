@@ -1,6 +1,5 @@
 from language import *
 from env import Env
-from syntax_errors import *
 
 
 def check_bind_spec(name: str):
