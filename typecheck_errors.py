@@ -28,3 +28,7 @@ class BorrowedValueUseError(RuntimeError):
 
 class DeallocatedEnvError(RuntimeError):
     pass
+
+
+class ReferenceNoEffectError(RuntimeError):
+    pass

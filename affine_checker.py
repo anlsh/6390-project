@@ -4,8 +4,7 @@ import dsl_types as dslT
 from typing import Tuple, Union
 
 from env import TypeCheckEnv, deepcopy_env
-from typecheck_errors import TypeMismatchError, LinAffineVariableReuseError, UnusedLinVariableError, \
-    EnvironmentMismatchError, BorrowedValueUseError
+import typecheck_errors as tc_err
 
 
 def err_on_unused_lins(env: TypeCheckEnv):
@@ -14,7 +13,7 @@ def err_on_unused_lins(env: TypeCheckEnv):
             continue
         name_t = env.get_bind_val(name)
         if name_t.is_lin() and name_t.is_own():
-            raise UnusedLinVariableError
+            raise tc_err.UnusedLinVariableError
 
 
 class AffineTypeChecker:
@@ -33,7 +32,7 @@ class AffineTypeChecker:
         # A variable's entry is set to None once a linear or affine judgement about it has been used. If we're
         # trying to use it again, then throw an error
         if env.get_bind_val(prog).is_borrow():
-            raise LinAffineVariableReuseError(f'{prog} attempts to use borrowed value')
+            raise tc_err.LinAffineVariableReuseError(f'{prog} attempts to use borrowed value')
 
         # If the judgement is unrestricted, then we can use it without any worry. If not, then we have to remove
         # the judgement from the context after using it.
@@ -51,7 +50,7 @@ class AffineTypeChecker:
         initprogram_t = cls.type_check(env, init_prog, being_bound=True)
 
         if not dslT.Type.is_subtype(initprogram_t, signature_t):
-            raise TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
+            raise tc_err.TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
                                     f'but got {initprogram_t}, which is not a subtype')
         else:
             env.define_bind(name, signature_t)
@@ -76,12 +75,10 @@ class AffineTypeChecker:
         # Make sure that the actual return value is a subtype of the signature return value
         sig_ret_t = dslT.tparse(sig_ret_tprog)
         if not dslT.Type.is_subtype(actual_ret_t, sig_ret_t):
-            raise TypeMismatchError(f'Function actually returns {actual_ret_t}, which is not a subtype of declared'
-                                    f'return {sig_ret_t}')
+            raise tc_err.TypeMismatchError(f'Function actually returns {actual_ret_t}, '
+                                           f'which is not a subtype of declared return {sig_ret_t}')
         else:
-            env.define_bind(fname,
-                            dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls)
-            )
+            env.define_bind(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
             return lang.T_UNIT
 
     # TODO Implement the whole shebang on references... Seriously wtf are these things...
@@ -90,9 +87,9 @@ class AffineTypeChecker:
     def check_mkref(cls, env: TypeCheckEnv, ref_thing):
         ref_type = env.get_bind_val(ref_thing)
         if not ref_type.is_own():
-            raise BorrowedValueUseError(f"Attempted to use borrowed value {ref_thing}")
+            raise tc_err.BorrowedValueUseError(f"Attempted to use borrowed value {ref_thing}")
         ref_type.set_borrow()
-        return dslT.RefType(mod=lang.Tmod.aff, ref_type=ref_type)
+        return dslT.RefType(mod=lang.Tmod.un, ref_type=ref_type)
 
     @classmethod
     def check_setref(cls, env: TypeCheckEnv, ref_name, new_def):
@@ -102,13 +99,13 @@ class AffineTypeChecker:
 
         new_def_type = cls.type_check(env, new_def, being_bound=True)
         if not new_def_type == ref_type.referenced_type():
-            raise TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
+            raise tc_err.TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
                                     f"but set was attempted with {new_def_type}")
 
         if ref_type.is_own() and ref_type.referenced_type().is_lin():
-            raise UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
+            raise tc_err.UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
 
-        return new_def_type
+        return lang.T_UNIT
 
     @classmethod
     def check_set(cls, env: TypeCheckEnv, target_loc, new_def):
@@ -116,13 +113,13 @@ class AffineTypeChecker:
         setform_t = cls.type_check(env, new_def, being_bound=True)
 
         if not dslT.Type.is_subtype(setform_t, place_sig_t):
-            raise TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
+            raise tc_err.TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
         else:
             # TODO Think this is justfied, but double-check
             if place_sig_t.is_borrow():
                 env.get_bind_val(target_loc).set_own()
             elif place_sig_t.is_own() and place_sig_t.is_lin():
-                raise TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
+                raise tc_err.TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
             return lang.T_UNIT
 
     @classmethod
@@ -140,7 +137,7 @@ class AffineTypeChecker:
 
         for i, (actual_argT, sigT) in enumerate(zip(actual_arg_t_ls, ftype.argTs)):
             if not dslT.Type.is_subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
-                raise TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
+                raise tc_err.TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
 
         return ftype.retT
 
@@ -156,7 +153,7 @@ class AffineTypeChecker:
     def check_if(cls, env: TypeCheckEnv, test, then_body, else_body):
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
-            raise TypeMismatchError("If statement conditional was not of type bool.")
+            raise tc_err.TypeMismatchError("If statement conditional was not of type bool.")
 
         new_env_then = TypeCheckEnv(outer=deepcopy_env(env))
         new_env_else = TypeCheckEnv(outer=env)
@@ -165,10 +162,10 @@ class AffineTypeChecker:
 
         # TODO Confirm that this works
         if new_env_then.outer != env:
-            raise EnvironmentMismatchError("Branches of if statement produce different environments")
+            raise tc_err.EnvironmentMismatchError("Branches of if statement produce different environments")
 
         if then_type != else_type:
-            raise TypeMismatchError("Then body type does not equal else body type.")
+            raise tc_err.TypeMismatchError("Then body type does not equal else body type.")
 
         return then_type
 
@@ -176,7 +173,7 @@ class AffineTypeChecker:
     def check_while(cls, env: TypeCheckEnv, test, default, body):
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
-            raise TypeMismatchError("While statement conditional was not of type bool.")
+            raise tc_err.TypeMismatchError("While statement conditional was not of type bool.")
         old_env = deepcopy_env(env)
 
         new_env_def = TypeCheckEnv(outer=deepcopy_env(env))
@@ -185,12 +182,12 @@ class AffineTypeChecker:
         bod_type = cls.type_check(new_env_bod, body, descope=True)
 
         if new_env_def.outer != old_env:
-            raise EnvironmentMismatchError("Default clause illegally modifies environment")
+            raise tc_err.EnvironmentMismatchError("Default clause illegally modifies environment")
         elif new_env_bod.outer != old_env:
-            raise EnvironmentMismatchError("Body clause illegally modifies environment")
+            raise tc_err.EnvironmentMismatchError("Body clause illegally modifies environment")
 
         if not def_type == bod_type:
-            raise TypeMismatchError("Default and Body clauses return values of different types")
+            raise tc_err.TypeMismatchError("Default and Body clauses return values of different types")
 
         return def_type
 
@@ -224,7 +221,7 @@ class AffineTypeChecker:
         elif len(prog) == 0:
             # The empty list is always interpreted as nil.
             ret = lang.T_NIL
-        elif prog[0] in lang.MACRO_NAMES:
+        elif prog[0] in macro_tcheck_fns:
             ret = macro_tcheck_fns[prog[0]](env, *prog[1:])
         else:
             # We performed the check for zero-length above, so None will never actually be returned
@@ -232,7 +229,12 @@ class AffineTypeChecker:
 
         if descope:
             err_on_unused_lins(env)
-        if (not being_bound) and (ret.is_lin()):
-            raise UnusedLinVariableError()
+
+        if not being_bound:
+            if ret.is_lin():
+                raise tc_err.UnusedLinVariableError()
+            # TODO It's not so great to hardcode this thing here, but maybe it's not too ugly?
+            elif prog[0] == 'mkref':
+                raise tc_err.ReferenceNoEffectError
 
         return ret
