@@ -117,10 +117,11 @@ class Env:
         defining_env.bindings[name] = val, defining_env
 
     @_requires_allocated
-    def deallocate(self, name: str):
-        val, defining_env = self.get_bind(name)
-        if val.is_own():
-            defining_env.get_bind(name).set_own()
+    def deallocate(self,):
+        for name in self.bindings:
+            val, defining_env = self.get_bind(name)
+            if val.is_own():
+                defining_env.get_bind_val(name).set_own()
         self.allocated = False
 
 
@@ -132,6 +133,24 @@ class TypeCheckEnv(Env):
         if outer is not None:
             assert isinstance(outer, TypeCheckEnv)
         super().__init__(defaults=defaults, outer=outer)
+
+    def deallocate(self,):
+
+        ######################################
+        # Check for unused linear judgements #
+        ######################################
+        for name in self.get_toplevel_binds():
+            if self.get_bind_val(name) is None:
+                continue
+            name_t = self.get_bind_val(name)
+            if name_t.is_lin() and name_t.is_own():
+                raise tc_err.UnusedLinVariableError
+
+        ##############################################
+        # Make sure to call superclass to deallocate #
+        ##############################################
+
+        super().deallocate()
 
     def define_bind(self, name: str, val: Type) -> None:
         return super().define_bind(name=name, val=val)

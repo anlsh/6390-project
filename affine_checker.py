@@ -7,15 +7,6 @@ from env import TypeCheckEnv, deepcopy_env
 import typecheck_errors as tc_err
 
 
-def err_on_unused_lins(env: TypeCheckEnv):
-    for name in env.get_toplevel_binds():
-        if env.get_bind_val(name) is None:
-            continue
-        name_t = env.get_bind_val(name)
-        if name_t.is_lin() and name_t.is_own():
-            raise tc_err.UnusedLinVariableError
-
-
 class AffineTypeChecker:
 
     @classmethod
@@ -228,7 +219,7 @@ class AffineTypeChecker:
             ret = cls.check_sequential(env, prog)
 
         if descope:
-            err_on_unused_lins(env)
+            env.deallocate()
 
         if not being_bound:
             if ret.is_lin():
