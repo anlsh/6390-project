@@ -4,7 +4,6 @@ import typecheck_errors as tc_err
 from affine_checker import AffineTypeChecker as ATC
 import dsl_types as dslT
 from env import TypeCheckEnv, deepcopy_env
-from env import BindingRedefinitionError
 from dsl_parser import dsl_parse
 
 
@@ -58,7 +57,7 @@ def test_unrestricted_variables():
     # But you're not allowed to defvar a name twice, even with same type
     prog = dsl_parse("((defvar x (un val int) 3) (defvar x (un val int) 4))")
     env = base_tcheck_env()
-    with pytest.raises(BindingRedefinitionError):
+    with pytest.raises(tc_err.BindingRedefinitionError):
         ATC.type_check(env, prog)
 
     # Unrestricted values can be used multiple times
@@ -138,7 +137,7 @@ def test_plus_type_checks_incorrect_args():
 
 
 def test_variables_redeclare():
-    with pytest.raises(BindingRedefinitionError):
+    with pytest.raises(tc_err.BindingRedefinitionError):
         prog = dsl_parse("((defvar x (un val int) 3) (defvar x (un val int) 3) )")
         ATC.type_check(base_tcheck_env(), prog)
 
@@ -227,4 +226,3 @@ def test_if_lin3():
 def test_while():
     prog = dsl_parse("((defvar x (un val int) 0) (while (apply < x 3) -2 ((set x (apply + x 1)) x)))")
     ATC.type_check(base_tcheck_env(), prog, descope=False)
-

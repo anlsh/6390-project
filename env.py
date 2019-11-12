@@ -1,9 +1,18 @@
 from typing import Any
 from typing import Tuple
 from dsl_types import Type
-from typecheck_errors import BindingRedefinitionError, BindingUndefinedError, DeallocatedEnvError
+import typecheck_errors as tc_err
 from copy import deepcopy
 from typing import Union
+
+
+def _requires_allocated(f):
+    def f_meth(self, *args, **kwargs):
+        if not self.allocated:
+            raise tc_err.DeallocatedEnvError
+        return f(self, *args, **kwargs)
+
+    return f_meth
 
 
 class Env:
@@ -25,7 +34,13 @@ class Env:
             self.define_bind(k, defaults[k])
 
     def __eq__(self, other):
+
+        if not isinstance(other, Env):
+            return False
+
         if self.outer != other.outer:
+            return False
+        elif self.allocated != other.allocated:
             return False
 
         for k in self.bindings:
@@ -43,20 +58,10 @@ class Env:
 
         return True
 
-    # TODO Remedy this situation
-    def __requires_allocated(self, f):
-
-        def f_meth(*args, **kwargs):
-            if not self.allocated:
-                raise DeallocatedEnvError
-            return f(*args, **kwargs)
-
-        return f_meth
-
     def __hash__(self):
         return id(self)
 
-    @__requires_allocated
+    @_requires_allocated
     def contains_bind(self, name: str) -> bool:
         """
         Check if the current env or any of its parents have a binding for name
@@ -68,7 +73,7 @@ class Env:
         else:
             return (self.outer is not None) and self.outer.contains_bind(name)
 
-    @__requires_allocated
+    @_requires_allocated
     def define_bind(self, name: str, val: Any) -> None:
         """
         Create a binding with a given value, raising an error if the binding already exists
@@ -77,15 +82,15 @@ class Env:
         :return:
         """
         if self.contains_bind(name):
-            raise BindingRedefinitionError(f"Attempting to redefine {name}")
+            raise tc_err.BindingRedefinitionError(f"Attempting to redefine {name}")
         self.bindings[name] = None, self
         self.set_bind_val(name, val)
 
-    @__requires_allocated
+    @_requires_allocated
     def get_toplevel_binds(self, ) -> Tuple:
         return tuple([name for name in self.bindings])
 
-    @__requires_allocated
+    @_requires_allocated
     def get_bind(self, name: str) -> Tuple[Any, Any]:
         """
         Get a tuple (val, defining_env) given the name of a binding. defining_env is either the current Env or one
@@ -94,24 +99,24 @@ class Env:
         :return:
         """
         if not self.contains_bind(name):
-            raise BindingUndefinedError(f'{name} is undefined')
+            raise tc_err.BindingUndefinedError(f'{name} is undefined')
         else:
             if name in self.bindings:
                 return self.bindings[name]
             else:
                 return self.outer.get_bind(name)
 
-    @__requires_allocated
+    @_requires_allocated
     def get_bind_val(self, name: str) -> Any:
         val, defining_env = self.get_bind(name)
         return val
 
-    @__requires_allocated
+    @_requires_allocated
     def set_bind_val(self, name: str, val: Any,):
         _, defining_env = self.get_bind(name)
         defining_env.bindings[name] = val, defining_env
 
-    @__requires_allocated
+    @_requires_allocated
     def deallocate(self, name: str):
         val, defining_env = self.get_bind(name)
         if val.is_own():
