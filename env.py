@@ -120,7 +120,7 @@ class Env:
     def deallocate(self,):
         for name in self.bindings:
             val, defining_env = self.get_bind(name)
-            if val.is_own() and isinstance(val, dslT.RefType):
+            if isinstance(val, dslT.RefType) and val.is_own() :
                 original_binding_type = defining_env.get_bind_val(name)
                 if original_binding_type.is_borrow():
                     original_binding_type.set_own()

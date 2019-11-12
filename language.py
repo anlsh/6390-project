@@ -6,7 +6,7 @@ bool_map = {"true": True, "false": False}
 
 builtin_fn_vals = {
         '+': op.add, '-': op.sub, '*': op.mul, '/': op.truediv,
-        '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le,
+        '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le, '=': op.eq,
         'not': op.not_
 }
 
@@ -26,6 +26,7 @@ builtin_fn_types = {
     "<": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_INT, T_LIN_INT)),
     ">=": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_INT, T_LIN_INT)),
     "<=": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_INT, T_LIN_INT)),
+    "=": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_INT, T_LIN_INT)),
     "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_BOOL,)),
 }
 

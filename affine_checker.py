@@ -51,11 +51,10 @@ class AffineTypeChecker:
     def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
 
         # Functions don't close over enclosing values, so declare a new env that the body will be type-checking in
-        new_env = TypeCheckEnv()
+        new_env = TypeCheckEnv(defaults=lang.builtin_fn_vals)
 
         # To type-check the body, first assume that all arguments have the declared types...
         arg_t_ls = ()
-        print(arg_spec_ls)
         for arg_name, arg_tprog in arg_spec_ls:
             new_env.define_bind(arg_name, dslT.tparse(arg_tprog))
             arg_spec_ls += (new_env.get_bind_val(arg_name),)

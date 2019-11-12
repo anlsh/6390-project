@@ -3,23 +3,18 @@ from language import *
 
 
 class Procedure:
-    def __init__(self, fn_type, argspec_ls, fn_body):
-
-        # TODO How to handle recursive procedures?
-
+    def __init__(self, argspec_ls, fn_body):
         self.argspec_ls = argspec_ls
         self.fn_body = fn_body
-        # TODO Have to figure out how to actually use the function type...
-        self.type = fn_type
 
     def __call__(self, *argvals):
         if len(argvals) != len(self.argspec_ls):
             raise RuntimeError("Mismatch between number of arguments required and number of arguments given")
-        env = Env()
+        # TODO How to have an env that captures previously defined functions but not variables?
+        env = Env(defaults=builtin_fn_vals)
         for argspec, val in zip(self.argspec_ls, argvals):
-            name, tmod, base_t = argspec
-            # TODO TYPING Have to create this as a function type!
-            env.define_bind(name, tmod, base_t)
+            name, arg_type = argspec
+            env.define_bind(name, arg_type)
             env.set_bind_val(name, val)
 
         return eval_form(env, self.fn_body)
@@ -39,28 +34,26 @@ def eval_form(base_env: Env, prog):
         env.define_type(base_type)
         return base_type
 
-    def eval_defun(env: Env, fun_spec, argspec_list, fn_body):
-        # TODO Have to figure out how to represent/check function types
-        TD_FUNCTION_TYPE = None
-        env.define_bind(*fun_spec)
-        env.set_bind_val(fun_spec[0], Procedure(TD_FUNCTION_TYPE, argspec_list, fn_body))
+    def eval_defun(env: Env, fname, fun_ret_t, argspec_list, fn_body):
+        env.define_bind(fname, Procedure(argspec_list, fn_body))
 
     def eval_set(env: Env, var_name, val_prog):
         final = eval_form(env, val_prog)
         env.set_bind_val(var_name, final)
         return final
 
-    def eval_apply(env: Env, fun_name, arg_list):
-        return env.get_bind_val(fun_name,)(*arg_list)
+    def eval_apply(env: Env, fun_name, *arg_list):
+        eval_args = [eval_form(env, arg) for arg in arg_list]
+        return env.get_bind_val(fun_name,)(*eval_args)
 
-    def eval_if(env: Env, when_c, then_c, else_c, ):
+    def eval_if(env: Env, test, then_c, else_c, ):
         """
         Take in when, then, and else ASTs and execute the if statement
         """
-        when_result = eval_form(env, when_c)
+        test_result = eval_form(env, test)
         inner_env = deepcopy_env(env)
 
-        if when_result:
+        if test_result:
             ret = eval_form(inner_env, then_c)
         else:
             ret = eval_form(inner_env, else_c)
@@ -75,13 +68,14 @@ def eval_form(base_env: Env, prog):
         ret = None
 
         while True:
-            test_result = eval_form(env, test_c)
+            test_result = eval_form(inner_env, test_c)
             if test_result:
                 return_default = False
                 ret = eval_form(inner_env, body_c)
             else:
                 break
 
+        inner_env.deallocate()
         if not return_default:
             return ret
         else:
@@ -129,10 +123,10 @@ def eval_form(base_env: Env, prog):
         except ValueError:
             pass
 
-        return base_env.get_bind_val(prog)
+        return eval_form(base_env, str(base_env.get_bind_val(prog)))
     else:
         if len(prog) == 0:
-            return NIL
+            return T_NIL
         else:
             first_element = prog[0]
             if isinstance(first_element, str):
@@ -149,5 +143,5 @@ def eval_form(base_env: Env, prog):
                 return ret
 
 
-def evaluate(prog):
-    return eval_form(Env(), prog)
+def evaluate(env, prog):
+    return eval_form(env, prog)
