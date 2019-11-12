@@ -32,3 +32,7 @@ class DeallocatedEnvError(RuntimeError):
 
 class ReferenceNoEffectError(RuntimeError):
     pass
+
+
+class DestructiveReturnOfOwnership(RuntimeError):
+    pass

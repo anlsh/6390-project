@@ -1,6 +1,6 @@
 from typing import Any
 from typing import Tuple
-from dsl_types import Type
+import dsl_types as dslT
 import typecheck_errors as tc_err
 from copy import deepcopy
 from typing import Union
@@ -120,8 +120,14 @@ class Env:
     def deallocate(self,):
         for name in self.bindings:
             val, defining_env = self.get_bind(name)
-            if val.is_own():
-                defining_env.get_bind_val(name).set_own()
+            if val.is_own() and isinstance(val, dslT.RefType):
+                original_binding_type = defining_env.get_bind_val(name)
+                if original_binding_type.is_borrow():
+                    original_binding_type.set_own()
+                else:
+                    raise tc_err.DestructiveReturnOfOwnership("Reference to variable is returning ownership at a point"
+                                                              "when original variable again owns an object: this would"
+                                                              "clobber current value of variable.")
         self.allocated = False
 
 
@@ -152,16 +158,16 @@ class TypeCheckEnv(Env):
 
         super().deallocate()
 
-    def define_bind(self, name: str, val: Type) -> None:
+    def define_bind(self, name: str, val: dslT.Type) -> None:
         return super().define_bind(name=name, val=val)
 
-    def get_bind(self, name: str) -> Tuple[Type, Env]:
+    def get_bind(self, name: str) -> Tuple[dslT.Type, Env]:
         return super().get_bind(name=name)
 
-    def get_bind_val(self, name: str) -> Type:
+    def get_bind_val(self, name: str) -> dslT.Type:
         return super().get_bind_val(name=name)
 
-    def set_bind_val(self, name: str, val: Type,) -> None:
+    def set_bind_val(self, name: str, val: dslT.Type,) -> None:
         return super().set_bind_val(name=name, val=val)
 
 
