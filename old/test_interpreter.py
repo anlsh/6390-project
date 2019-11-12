@@ -2,11 +2,13 @@ import pytest
 
 from old.interpreter import evaluate
 from dsl_parser import dsl_parse
+import language as lang
+from old.syntax_errors import VariableUndefinedError
 
 
 def test_define_variable():
-    prog = dsl_parse("(defvar x un footype)")
-    assert evaluate(prog) == UNIT
+    prog = dsl_parse("(defvar x (un val footype) 3)")
+    assert evaluate(prog) == lang.T_UNIT
 
 
 def test_var_access():

@@ -1,0 +1,2 @@
+class VariableUndefinedError(RuntimeError):
+    pass

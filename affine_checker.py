@@ -55,6 +55,7 @@ class AffineTypeChecker:
 
         # To type-check the body, first assume that all arguments have the declared types...
         arg_t_ls = ()
+        print(arg_spec_ls)
         for arg_name, arg_tprog in arg_spec_ls:
             new_env.define_bind(arg_name, dslT.tparse(arg_tprog))
             arg_spec_ls += (new_env.get_bind_val(arg_name),)

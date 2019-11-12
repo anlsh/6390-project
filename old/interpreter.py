@@ -1,4 +1,4 @@
-from env import Env
+from env import Env, deepcopy_env
 from language import *
 
 
@@ -31,9 +31,9 @@ def eval_form(base_env: Env, prog):
     # Defining the macro functions here is the only nice way to allow them to be mutually recursive #
     #################################################################################################
 
-    def eval_defvar(env: Env, var_name, bmod, btype):
-        env.define_bind(var_name, bmod, btype)
-        return UNIT
+    def eval_defvar(env: Env, name, declared_tprog, init_prog):
+        env.define_bind(name, init_prog)
+        return T_UNIT
 
     def eval_deftype(env: Env, base_type):
         env.define_type(base_type)
@@ -51,7 +51,6 @@ def eval_form(base_env: Env, prog):
         return final
 
     def eval_apply(env: Env, fun_name, arg_list):
-        # TODO Figure out apply, it's actually useless
         return env.get_bind_val(fun_name,)(*arg_list)
 
     def eval_if(env: Env, when_c, then_c, else_c, ):
@@ -59,7 +58,7 @@ def eval_form(base_env: Env, prog):
         Take in when, then, and else ASTs and execute the if statement
         """
         when_result = eval_form(env, when_c)
-        inner_env = Env(env)
+        inner_env = deepcopy_env(env)
 
         if when_result:
             ret = eval_form(inner_env, then_c)
@@ -71,7 +70,7 @@ def eval_form(base_env: Env, prog):
 
     def eval_while(env: Env, test_c, default_c, body_c):
 
-        inner_env = Env(env)
+        inner_env = deepcopy_env(env)
         return_default = True
         ret = None
 

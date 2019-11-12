@@ -229,5 +229,9 @@ def test_while():
 
 
 def test_ref_fun():
-    prog = dsl_parse("((defvar x (un val int) 3) (defun (foo un int) ((x un ref)) (apply + x 1)) x)")
+    # TODO Why is "+" undefined here?
+    prog = dsl_parse("((defvar x (un val int) 3) "
+                     "(defun foo (un val int) ((y (un ref int))) (set y (apply + x 1)) x)))"
+                     "(apply foo x)"
+                     "x)")
     ATC.type_check(base_tcheck_env(), prog)
