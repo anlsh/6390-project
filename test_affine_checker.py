@@ -214,15 +214,20 @@ def test_if_lin():
 def test_if_lin2():
     prog = dsl_parse("((defvar x (lin val int) 3) (if true ((apply + x 1) (apply + x 1)) (apply + x 2)))")
     with pytest.raises(tc_err.LinAffineVariableReuseError):
-        ATC.type_check(base_tcheck_env(), prog,)
+        ATC.type_check(base_tcheck_env(), prog)
 
 
 def test_if_lin3():
     prog = dsl_parse("((defvar x (lin val int) 3) (if true (3) (apply + x 2)))")
     with pytest.raises(tc_err.EnvironmentMismatchError):
-        ATC.type_check(base_tcheck_env(), prog,)
+        ATC.type_check(base_tcheck_env(), prog)
 
 
 def test_while():
     prog = dsl_parse("((defvar x (un val int) 0) (while (apply < x 3) -2 ((set x (apply + x 1)) x)))")
     ATC.type_check(base_tcheck_env(), prog, descope=False)
+
+
+def test_ref_fun():
+    prog = dsl_parse("((defvar x (un val int) 3) (defun (foo un int) ((x un ref)) (apply + x 1)) x)")
+    ATC.type_check(base_tcheck_env(), prog)
