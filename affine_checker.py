@@ -50,14 +50,16 @@ class AffineTypeChecker:
     @classmethod
     def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
 
-        # Functions don't close over enclosing values, so declare a new env that the body will be type-checking in
+        # Functions don't close over enclosing values, so declare.0 a new env that the body will be type-checking in
+        # TODO Introducing builtins allows them to be used in the function body but there are problems when we try to
+        # deallocate the env
         new_env = TypeCheckEnv(defaults=lang.builtin_fn_vals)
 
         # To type-check the body, first assume that all arguments have the declared types...
         arg_t_ls = ()
         for arg_name, arg_tprog in arg_spec_ls:
             new_env.define_bind(arg_name, dslT.tparse(arg_tprog))
-            arg_spec_ls += (new_env.get_bind_val(arg_name),)
+            arg_t_ls += (new_env.get_bind_val(arg_name),)
 
         # And then check the body to see what is returned in the end. Set descope=True to make sure there aren't any
         # linear judgements used

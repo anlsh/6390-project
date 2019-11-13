@@ -82,7 +82,7 @@ def test_if_statement():
                  "    (set x 1000)  "
                  "    (defun add-3 (un val int) ((x (un val int))) (apply + x 3))"
                  "    (if (apply = 3 4) "
-                     "((defvar z (un val foobar)) (set z 10) (apply add-3 x)) "
+                     "((defvar z (un val foobar) 10) (apply add-3 x)) "
                      "(apply add-3 (apply add-3 z)))"
                  ")")
     with pytest.raises(BindingUndefinedError):
@@ -93,7 +93,7 @@ def test_if_statement():
                  "    (defun add-3 (un val int) ((x (un val int))) (apply + x 3))"
                  "    (if (apply = 3 4) "
                      "(apply add-3 x) "
-                     "(((defvar z (un val foobar) 0) (set z 10))  (apply add-3 (apply add-3 z)))) z"
+                     "(((defvar z (un val foobar) 10) (apply add-3 (apply add-3 z)))) z"
                  ")")
     with pytest.raises(BindingUndefinedError):
         evaluate(base_env(), prog)

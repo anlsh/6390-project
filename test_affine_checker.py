@@ -228,10 +228,20 @@ def test_while():
     ATC.type_check(base_tcheck_env(), prog, descope=False)
 
 
+def test_fun():
+    prog = dsl_parse("((defvar x (un val int) 3)"
+                     "(defun foo (un val bool) ((y (un val bool))) y )"
+                     "(apply foo x)"
+                     "x)")
+    with pytest.raises(tc_err.TypeMismatchError):
+        ATC.type_check(TypeCheckEnv(), prog)
+
+
 def test_ref_fun():
     # TODO Why is "+" undefined here?
-    prog = dsl_parse("((defvar x (un val int) 3) "
-                     "(defun foo (un val int) ((y (un ref int))) (set y (apply + x 1)) x)))"
-                     "(apply foo x)"
+    prog = dsl_parse("((defvar x (un val int) 3)"
+                     "(defvar xref (un ref (un val int)) (mkref x)) "
+                     "(defun foo (un val int) ((y (un ref (un val int)))) (set y (apply + y 1)) x)))"
+                     "(apply foo xref)"
                      "x)")
     ATC.type_check(base_tcheck_env(), prog)
