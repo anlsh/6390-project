@@ -28,10 +28,11 @@ class Env:
             assert isinstance(outer, Env)
 
         self.bindings = {}
+        self.functions = {}
         self.outer = outer
         self.allocated = True
         for k in (defaults or []):
-            self.define_bind(k, defaults[k])
+            self.define_fun(k, defaults[k])
 
     def __eq__(self, other):
 
@@ -74,6 +75,13 @@ class Env:
             return (self.outer is not None) and self.outer.contains_bind(name)
 
     @_requires_allocated
+    def contains_fun(self, name: str) -> bool:
+        if name in self.functions.keys():
+            return True
+        else:
+            return (self.outer is not None) and self.outer.contains_fun(name)
+
+    @_requires_allocated
     def define_bind(self, name: str, val: Any) -> None:
         """
         Create a binding with a given value, raising an error if the binding already exists
@@ -85,6 +93,12 @@ class Env:
             raise tc_err.BindingRedefinitionError(f"Attempting to redefine {name}")
         self.bindings[name] = None, self
         self.set_bind_val(name, val)
+
+    @_requires_allocated
+    def define_fun(self, name: str, val: Any) -> None:
+        if self.contains_fun(name):
+            raise tc_err.BindingRedefinitionError(f"Attempting to redefine {name}")
+        self.functions[name] = val
 
     @_requires_allocated
     def get_toplevel_binds(self, ) -> Tuple:
@@ -105,6 +119,16 @@ class Env:
                 return self.bindings[name]
             else:
                 return self.outer.get_bind(name)
+
+    @_requires_allocated
+    def get_fun_def(self, name: str) -> Any:
+        if not self.contains_fun(name):
+            raise tc_err.BindingUndefinedError(f'{name} is undefined')
+        else:
+            if name in self.functions:
+                return self.functions[name]
+            else:
+                return self.outer.get_fun_def(name)
 
     @_requires_allocated
     def get_bind_val(self, name: str) -> Any:

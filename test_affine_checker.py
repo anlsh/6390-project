@@ -8,7 +8,7 @@ from dsl_parser import dsl_parse
 
 
 def base_tcheck_env():
-    return TypeCheckEnv(outer=TypeCheckEnv(defaults=lang.builtin_fn_types))
+    return TypeCheckEnv(defaults=lang.builtin_fn_types)
 
 
 def test_reference():
@@ -234,11 +234,15 @@ def test_fun():
                      "(apply foo x)"
                      "x)")
     with pytest.raises(tc_err.TypeMismatchError):
-        ATC.type_check(TypeCheckEnv(), prog)
+        ATC.type_check(base_tcheck_env(), prog)
 
+def test_nested_fun():
+    prog = dsl_parse("( (defun add-3 (un val int) ((x (un val int))) (apply + x 3))  "
+                     "(defun add-4 (un val int) ((x (un val int))) (apply add-3 (apply + x 1)))"
+                     "(apply add-4 6) )")
+    ATC.type_check(base_tcheck_env(), prog)
 
 def test_ref_fun():
-    # TODO Why is "+" undefined here?
     prog = dsl_parse("((defvar x (un val int) 3)"
                      "(defvar xref (un ref (un val int)) (mkref x)) "
                      "(defun foo (un val int) ((y (un ref (un val int)))) (set y (apply + y 1)) x)))"

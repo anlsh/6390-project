@@ -3,15 +3,16 @@ from language import *
 
 
 class Procedure:
-    def __init__(self, argspec_ls, fn_body):
+    def __init__(self, defaults, argspec_ls, fn_body):
         self.argspec_ls = argspec_ls
         self.fn_body = fn_body
+        self.defaults = defaults
 
     def __call__(self, *argvals):
         if len(argvals) != len(self.argspec_ls):
             raise RuntimeError("Mismatch between number of arguments required and number of arguments given")
         # TODO How to have an env that captures previously defined functions but not variables?
-        env = Env(defaults=builtin_fn_vals)
+        env = Env(defaults=self.defaults)
         for argspec, val in zip(self.argspec_ls, argvals):
             name, arg_type = argspec
             env.define_bind(name, arg_type)
@@ -35,7 +36,7 @@ def eval_form(base_env: Env, prog):
         return base_type
 
     def eval_defun(env: Env, fname, fun_ret_t, argspec_list, fn_body):
-        env.define_bind(fname, Procedure(argspec_list, fn_body))
+        env.define_fun(fname, Procedure(base_env.functions, argspec_list, fn_body))
 
     def eval_set(env: Env, var_name, val_prog):
         final = eval_form(env, val_prog)
@@ -44,7 +45,7 @@ def eval_form(base_env: Env, prog):
 
     def eval_apply(env: Env, fun_name, *arg_list):
         eval_args = [eval_form(env, arg) for arg in arg_list]
-        return env.get_bind_val(fun_name,)(*eval_args)
+        return env.get_fun_def(fun_name)(*eval_args)
 
     def eval_if(env: Env, test, then_c, else_c, ):
         """

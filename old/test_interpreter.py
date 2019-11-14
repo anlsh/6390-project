@@ -8,7 +8,7 @@ from env import Env
 
 
 def base_env():
-    return Env(outer=Env(defaults=lang.builtin_fn_vals))
+    return Env(defaults=lang.builtin_fn_vals)
 
 # TODO Raise error if variable not initialized? Currently raises TypeError
 def test_define_variable():
@@ -51,7 +51,7 @@ def test_defining_functions():
     prog = dsl_parse("( (defvar x (un val foobar) 0) "
                      "(set x 1000) "
                      "(defun add-3 (un val int) ((x (un val int))) (apply + x 3))"
-                     "(add-3 x))")
+                     "(apply add-3 x))")
     assert evaluate(base_env(), prog) == 1003
 
     prog = dsl_parse("( (defun add-3 (un val int) ((x (un val int))) (apply + x 3))  "
@@ -93,7 +93,7 @@ def test_if_statement():
                  "    (defun add-3 (un val int) ((x (un val int))) (apply + x 3))"
                  "    (if (apply = 3 4) "
                      "(apply add-3 x) "
-                     "(((defvar z (un val foobar) 10) (apply add-3 (apply add-3 z)))) z"
+                     "((defvar z (un val foobar) 10) (apply add-3 (apply add-3 z)))) z"
                  ")")
     with pytest.raises(BindingUndefinedError):
         evaluate(base_env(), prog)

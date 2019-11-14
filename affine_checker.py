@@ -19,6 +19,9 @@ class AffineTypeChecker:
             if prog in lang.bool_map:
                 return lang.T_BOOL
 
+        if env.contains_fun(prog):
+            return env.get_fun_def(prog)
+
         # If the program isn't a boolean or integer, it must be a variable. Look it up in the current context
         # A variable's entry is set to None once a linear or affine judgement about it has been used. If we're
         # trying to use it again, then throw an error
@@ -51,9 +54,7 @@ class AffineTypeChecker:
     def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
 
         # Functions don't close over enclosing values, so declare.0 a new env that the body will be type-checking in
-        # TODO Introducing builtins allows them to be used in the function body but there are problems when we try to
-        # deallocate the env
-        new_env = TypeCheckEnv(defaults=lang.builtin_fn_vals)
+        new_env = TypeCheckEnv(defaults=env.functions)
 
         # To type-check the body, first assume that all arguments have the declared types...
         arg_t_ls = ()
@@ -71,7 +72,7 @@ class AffineTypeChecker:
             raise tc_err.TypeMismatchError(f'Function actually returns {actual_ret_t}, '
                                            f'which is not a subtype of declared return {sig_ret_t}')
         else:
-            env.define_bind(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
+            env.define_fun(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
             return lang.T_UNIT
 
     # TODO Implement the whole shebang on references... Seriously wtf are these things...
