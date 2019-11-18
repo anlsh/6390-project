@@ -38,7 +38,7 @@ class Type:
         self._type_args = args
         self._category = category
 
-        self._borrow_parent = borrow_parent
+        self.borrow_parent = borrow_parent
         self._ownership = Town.own
 
     def __eq__(self, other):
@@ -150,7 +150,7 @@ class RefType(Type):
         return self._type_args
 
     def return_reference(self,) -> None:
-        self._borrow_parent.set_own()
+        self.borrow_parent.set_own()
 
 
 def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:

@@ -281,3 +281,20 @@ def test_reference_borrow_under_scope():
                      "x"
                      ")")
     ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_ref_borrow_lin():
+    prog = dsl_parse("(  (defvar x (lin val int) 3)"
+                     "(scope "
+                     "    (defvar xref (un ref (lin val int)) (mkref x))"
+                     "))")
+    with pytest.raises(tc_err.UnusedLinVariableError):
+        ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+
+def test_ref_borrow_lin2():
+    prog = dsl_parse("(  (defvar x (lin val int) 3)"
+                     "    (defvar xref (un ref (lin val int)) (mkref x))"
+                     ")")
+    with pytest.raises(tc_err.UnusedLinVariableError):
+        ATC.type_check(base_tcheck_env(), prog, descope=True)

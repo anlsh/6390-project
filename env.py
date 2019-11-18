@@ -142,16 +142,18 @@ class Env:
 
     @_requires_allocated
     def deallocate(self,):
-        for name in self.bindings:
-            val, defining_env = self.get_bind(name)
-            if isinstance(val, dslT.RefType) and val.is_own() :
-                original_binding_type = defining_env.get_bind_val(name)
-                if original_binding_type.is_borrow():
-                    original_binding_type.set_own()
-                else:
-                    raise tc_err.DestructiveReturnOfOwnership("Reference to variable is returning ownership at a point"
-                                                              "when original variable again owns an object: this would"
-                                                              "clobber current value of variable.")
+        # for name in self.bindings:
+        #     val, defining_env = self.get_bind(name)
+        #     if isinstance(val, dslT.RefType) and val.is_own() :
+        #         original_binding_type = defining_env.get_bind_val(name)
+        #         if original_binding_type.is_borrow():
+        #             original_binding_type.set_own()
+        #         else:
+        #             raise tc_err.DestructiveReturnOfOwnership("Reference to variable is returning "
+        #                                                       "ownership at a point"
+        #                                                       "when original variable again owns an object: "
+        #                                                       "this would"
+        #                                                       "clobber current value of variable.")
         self.allocated = False
 
 

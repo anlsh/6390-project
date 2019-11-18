@@ -47,6 +47,8 @@ class AffineTypeChecker:
             raise tc_err.TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
                                     f'but got {initprogram_t}, which is not a subtype')
         else:
+            if isinstance(signature_t, dslT.RefType):
+                signature_t.borrow_parent = initprogram_t.borrow_parent
             env.define_bind(name, signature_t)
             return lang.T_UNIT
 
