@@ -186,6 +186,11 @@ class AffineTypeChecker:
         return def_type
 
     @classmethod
+    def check_scope(cls, env: TypeCheckEnv, *body):
+        new_frame = TypeCheckEnv(outer=env)
+        return cls.type_check(new_frame, *body, descope=True)
+
+    @classmethod
     def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],
                    descope: bool = False, being_bound: bool = False) -> dslT.Type:
         """
@@ -207,7 +212,8 @@ class AffineTypeChecker:
             "set": cls.check_set,
             "apply": cls.check_apply,
             "if": cls.check_if,
-            "while": cls.check_while
+            "while": cls.check_while,
+            "scope": cls.check_scope,
         }
 
         if not (isinstance(prog, tuple)):
