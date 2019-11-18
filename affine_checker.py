@@ -41,15 +41,36 @@ class AffineTypeChecker:
     def check_defvar(cls, env: TypeCheckEnv, name, declared_tprog, init_prog):
 
         signature_t = dslT.tparse(declared_tprog)
-        initprogram_t = cls.type_check(env, init_prog, being_bound=True)
+        valprog_t = cls.type_check(env, init_prog, being_bound=True)
 
-        if not dslT.Type.is_subtype(initprogram_t, signature_t):
+        if not dslT.Type.is_subtype(valprog_t, signature_t):
             raise tc_err.TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
-                                    f'but got {initprogram_t}, which is not a subtype')
+                                           f'but got {valprog_t}, which is not a subtype')
         else:
             if isinstance(signature_t, dslT.RefType):
-                signature_t.borrow_parent = initprogram_t.borrow_parent
+                signature_t.borrow_parent = valprog_t.borrow_parent
+                valprog_t.set_borrow()
             env.define_bind(name, signature_t)
+            return lang.T_UNIT
+
+    @classmethod
+    def check_set(cls, env: TypeCheckEnv, name, new_def):
+
+        signature_t = env.get_bind_val(name)
+        valprog_t = cls.type_check(env, new_def, being_bound=True)
+
+        if not dslT.Type.is_subtype(valprog_t, signature_t):
+            raise tc_err.TypeMismatchError(f'Binding {name} expects variable of type {signature_t} '
+                                           f'but got {valprog_t}, which is not a subtype')
+        else:
+            if isinstance(signature_t, dslT.RefType):
+                signature_t.borrow_parent = valprog_t.borrow_parent
+                valprog_t.set_borrow()
+            # TODO Think this is justfied, but double-check
+            if signature_t.is_borrow():
+                env.get_bind_val(name).set_own()
+            elif signature_t.is_own() and signature_t.is_lin():
+                raise tc_err.TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
             return lang.T_UNIT
 
     @classmethod
@@ -100,21 +121,6 @@ class AffineTypeChecker:
             raise tc_err.UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
 
         return lang.T_UNIT
-
-    @classmethod
-    def check_set(cls, env: TypeCheckEnv, target_loc, new_def):
-        place_sig_t = env.get_bind_val(target_loc)
-        setform_t = cls.type_check(env, new_def, being_bound=True)
-
-        if not dslT.Type.is_subtype(setform_t, place_sig_t):
-            raise tc_err.TypeMismatchError(f"{target_loc} expects type {place_sig_t}, but got {setform_t}")
-        else:
-            # TODO Think this is justfied, but double-check
-            if place_sig_t.is_borrow():
-                env.get_bind_val(target_loc).set_own()
-            elif place_sig_t.is_own() and place_sig_t.is_lin():
-                raise tc_err.TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
-            return lang.T_UNIT
 
     @classmethod
     def check_apply(cls, env: TypeCheckEnv, fname, *fargs):
@@ -188,7 +194,7 @@ class AffineTypeChecker:
     @classmethod
     def check_scope(cls, env: TypeCheckEnv, *body):
         new_frame = TypeCheckEnv(outer=env)
-        return cls.type_check(new_frame, *body, descope=True)
+        return cls.type_check(new_frame, body, descope=True)
 
     @classmethod
     def type_check(cls, env: TypeCheckEnv, prog: Union[Tuple, str],
@@ -227,14 +233,14 @@ class AffineTypeChecker:
             # We performed the check for zero-length above, so None will never actually be returned
             ret = cls.check_sequential(env, prog)
 
-        if descope:
-            env.deallocate()
-
         if not being_bound:
             if ret.is_lin():
                 raise tc_err.UnusedLinVariableError()
             # TODO It's not so great to hardcode this thing here, but maybe it's not too ugly?
             elif prog[0] == 'mkref':
                 raise tc_err.ReferenceNoEffectError
+
+        if descope:
+            env.deallocate()
 
         return ret

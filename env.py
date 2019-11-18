@@ -142,18 +142,6 @@ class Env:
 
     @_requires_allocated
     def deallocate(self,):
-        # for name in self.bindings:
-        #     val, defining_env = self.get_bind(name)
-        #     if isinstance(val, dslT.RefType) and val.is_own() :
-        #         original_binding_type = defining_env.get_bind_val(name)
-        #         if original_binding_type.is_borrow():
-        #             original_binding_type.set_own()
-        #         else:
-        #             raise tc_err.DestructiveReturnOfOwnership("Reference to variable is returning "
-        #                                                       "ownership at a point"
-        #                                                       "when original variable again owns an object: "
-        #                                                       "this would"
-        #                                                       "clobber current value of variable.")
         self.allocated = False
 
 
@@ -173,13 +161,12 @@ class TypeCheckEnv(Env):
         ######################################
 
         refs = tuple(filter(lambda name: isinstance(self.get_bind_val(name), dslT.RefType),
-                      self.get_toplevel_binds()))
-        for _ in range(len(refs)):
-            for refname in refs:
-                t = self.get_bind_val(refname)
-                assert isinstance(t, dslT.RefType)
-                if t.is_own():
-                    t.return_reference()
+                            self.get_toplevel_binds()))
+        for refname in refs:
+            t = self.get_bind_val(refname)
+            assert isinstance(t, dslT.RefType)
+            if t.is_own():
+                t.return_reference()
 
         for name in self.get_toplevel_binds():
             name_t = self.get_bind_val(name)
