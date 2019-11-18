@@ -169,9 +169,17 @@ class TypeCheckEnv(Env):
         ######################################
         # Check for unused linear judgements #
         ######################################
+
+        refs = tuple(filter(lambda name: isinstance(self.get_bind_val(name), dslT.RefType),
+                      self.get_toplevel_binds()))
+        for _ in range(len(refs)):
+            for refname in refs:
+                t = self.get_bind_val(refname)
+                assert isinstance(t, dslT.RefType)
+                if t.is_own():
+                    t.return_reference()
+
         for name in self.get_toplevel_binds():
-            if self.get_bind_val(name) is None:
-                continue
             name_t = self.get_bind_val(name)
             if name_t.is_lin() and name_t.is_own():
                 raise tc_err.UnusedLinVariableError

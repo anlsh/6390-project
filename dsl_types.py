@@ -33,11 +33,12 @@ class Town(Enum):
 
 class Type:
     def __init__(self, *,
-                 category, mod, args):
+                 category, mod, args, borrow_parent):
         self._mod = mod
         self._type_args = args
         self._category = category
 
+        self._borrow_parent = borrow_parent
         self._ownership = Town.own
 
     def __eq__(self, other):
@@ -51,6 +52,8 @@ class Type:
         self._ownership = Town.borrow
 
     def set_own(self,):
+        if self._ownership == Town.own:
+            raise RuntimeError("Handle already owns a resource, but we are attempting to make it own")
         self._ownership = Town.own
 
     def is_borrow(self,) -> bool:
@@ -119,8 +122,9 @@ class Type:
 
 
 class FunType(Type):
-    def __init__(self, mod: Tmod, retT: Type, argTs):
-        super().__init__(category=Tcat.fun, mod=mod, args=(retT, argTs))
+    def __init__(self, mod: Tmod, retT: Type, argTs, borrow_parent: Type = None):
+        super().__init__(category=Tcat.fun, mod=mod, args=(retT, argTs,),
+                         borrow_parent=borrow_parent)
 
     @property
     def retT(self,) -> Type:
@@ -132,16 +136,21 @@ class FunType(Type):
 
 
 class ValType(Type):
-    def __init__(self, mod: Tmod, tname):
-        super().__init__(mod=mod, category=Tcat.val, args=tname)
+    def __init__(self, mod: Tmod, tname, borrow_parent: Type = None):
+        super().__init__(mod=mod, category=Tcat.val, args=tname,
+                         borrow_parent=borrow_parent)
 
 
 class RefType(Type):
-    def __init__(self, mod: Tmod, ref_type: Type):
-        super().__init__(mod=mod, category=Tcat.ref, args=ref_type)
+    def __init__(self, mod: Tmod, ref_type: Type, borrow_parent: Type = None):
+        super().__init__(mod=mod, category=Tcat.ref, args=ref_type,
+                         borrow_parent=borrow_parent)
 
     def referenced_type(self,) -> Type:
         return self._type_args
+
+    def return_reference(self,) -> None:
+        self._borrow_parent.set_own()
 
 
 def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:

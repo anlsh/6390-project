@@ -75,26 +75,24 @@ class AffineTypeChecker:
             env.define_fun(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
             return lang.T_UNIT
 
-    # TODO Implement the whole shebang on references... Seriously wtf are these things...
-
     @classmethod
     def check_mkref(cls, env: TypeCheckEnv, var):
         ref_type = env.get_bind_val(var)
         if not ref_type.is_own():
             raise tc_err.BorrowedValueUseError(f"Attempted to make reference to {var}, which is currently borrowed")
         ref_type.set_borrow()
-        return dslT.RefType(mod=lang.Tmod.un, ref_type=ref_type)
+        return dslT.RefType(mod=lang.Tmod.un, ref_type=ref_type, borrow_parent=ref_type)
 
     @classmethod
     def check_setref(cls, env: TypeCheckEnv, ref_name, new_def):
         ref_type = env.get_bind_val(ref_name)
         if not isinstance(ref_type, dslT.RefType):
-            raise RuntimeError("Attempted to use set reference on a non-reference!")
+            raise RuntimeError("Attempted to use setref on a non-reference!")
 
         new_def_type = cls.type_check(env, new_def, being_bound=True)
         if not new_def_type == ref_type.referenced_type():
             raise tc_err.TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
-                                    f"but set was attempted with {new_def_type}")
+                                           f"but set was attempted with {new_def_type}")
 
         if ref_type.is_own() and ref_type.referenced_type().is_lin():
             raise tc_err.UnusedLinVariableError("Attempt to set an owned linear variable through a reference")

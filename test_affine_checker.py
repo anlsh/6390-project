@@ -236,11 +236,13 @@ def test_fun():
     with pytest.raises(tc_err.TypeMismatchError):
         ATC.type_check(base_tcheck_env(), prog)
 
+
 def test_nested_fun():
     prog = dsl_parse("( (defun add-3 (un val int) ((x (un val int))) (apply + x 3))  "
                      "(defun add-4 (un val int) ((x (un val int))) (apply add-3 (apply + x 1)))"
                      "(apply add-4 6) )")
     ATC.type_check(base_tcheck_env(), prog)
+
 
 def test_ref_fun():
     prog = dsl_parse("((defvar x (un val int) 3)"
@@ -248,4 +250,34 @@ def test_ref_fun():
                      "(defun foo (un val int) ((y (un ref (un val int)))) (set y (apply + y 1)) x)))"
                      "(apply foo xref)"
                      "x)")
+    ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_scope_descopes():
+    prog = dsl_parse("(3"
+                     "(scope (defvar x (lin val int) 3)))"
+                     ")")
+
+    with pytest.raises(tc_err.UnusedLinVariableError):
+        ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_reference_borrows():
+    prog = dsl_parse("("
+                     "(defvar x (un val int) 3)"
+                     "(defvar xref (un ref (un val int)) (mkref x))"
+                     "x"
+                     ")")
+    with pytest.raises(tc_err.LinAffineVariableReuseError):
+        ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_reference_borrow_under_scope():
+    prog = dsl_parse("("
+                     "(defvar x (un val int) 3)"
+                     "(scope "
+                     "    (defvar xref (un ref (un val int)) (mkref x))"
+                     ")"
+                     "x"
+                     ")")
     ATC.type_check(base_tcheck_env(), prog)
