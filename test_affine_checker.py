@@ -247,7 +247,7 @@ def test_nested_fun():
 def test_ref_fun():
     prog = dsl_parse("((defvar x (un val int) 3)"
                      "(defvar xref (un ref (un val int)) (mkref x)) "
-                     "(defun foo (un val int) ((y (un ref (un val int)))) (set y (apply + y 1)) x)))"
+                     "(defun foo (un val int) ((y (un ref (un val int)))) (setref y (apply + y 1)))))"
                      "(apply foo xref)"
                      "x)")
     ATC.type_check(base_tcheck_env(), prog)

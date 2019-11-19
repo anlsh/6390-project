@@ -17,7 +17,6 @@ class Procedure:
             name, arg_type = argspec
             env.define_bind(name, arg_type)
             env.set_bind_val(name, val)
-
         return eval_form(env, self.fn_body)
 
 
@@ -28,11 +27,12 @@ def eval_form(base_env: Env, prog):
     #################################################################################################
 
     def eval_defvar(env: Env, name, declared_tprog, init_prog):
-        env.define_bind(name, init_prog)
+        final = eval_form(env, init_prog)
+        env.define_bind(name, final)
         return T_UNIT
 
     def eval_deftype(env: Env, base_type):
-        env.define_type(base_type)
+        # TODO Only the affine checker should cares about deftype
         return base_type
 
     def eval_defun(env: Env, fname, fun_ret_t, argspec_list, fn_body):
@@ -82,13 +82,24 @@ def eval_form(base_env: Env, prog):
         else:
             return eval_form(inner_env, default_c)
 
-    def eval_mut_ref(env: Env, var_name):
-        # TODO
-        raise NotImplementedError
+    def eval_mkref(env: Env, var):
+        return (var, env.get_bind(var))
 
-    def eval_ref(env: Env, var_name):
-        # TODO
-        raise NotImplementedError
+    def eval_setref(env: Env, ref_name, new_def):
+        eval_new_def = eval_form(env, new_def)
+        env.set_bind_val(ref_name, eval_new_def)
+
+    def eval_deref(env: Env, ref):
+        var, referenced_binding = env.get_bind_val(ref)
+        val, defining_env = referenced_binding
+        return val
+
+    def eval_setrefval(env: Env, ref, new_val):
+        eval_new_val = eval_form(env, new_val)
+        var, referenced_binding = env.get_bind_val(ref)
+        val, defining_env = referenced_binding
+        defining_env.set_bind_val(var, eval_new_val)
+
 
     ######################################
     # Begin actual evaluation code here! #
@@ -102,6 +113,10 @@ def eval_form(base_env: Env, prog):
         "apply": eval_apply,
         "if": eval_if,
         "while": eval_while,
+        "mkref": eval_mkref,
+        "setref": eval_setref,
+        "deref": eval_deref,
+        "setrefval": eval_setrefval
     }
 
     ############################################
@@ -124,7 +139,10 @@ def eval_form(base_env: Env, prog):
         except ValueError:
             pass
 
-        return eval_form(base_env, str(base_env.get_bind_val(prog)))
+        if len(prog) == 1:
+            return eval_form(base_env, str(base_env.get_bind_val(prog)))
+        else:
+            return base_env.get_bind_val(prog)
     else:
         if len(prog) == 0:
             return T_NIL

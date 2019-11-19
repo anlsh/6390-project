@@ -123,3 +123,12 @@ def test_while_statement():
                  "               ( (defvar 1 (un val foobar) 10) (set y (apply + y 1)) (set x (apply + x 1)) y)  )) q)")
     with pytest.raises(BindingUndefinedError):
         evaluate(base_env(), prog)
+
+
+def test_ref_fun():
+    prog = dsl_parse("((defvar x (un val int) 3)"
+                     "(defvar xref (un ref (un val int)) (mkref x)) "
+                     "(defun foo (un val int) ((y (un ref (un val int)))) (setrefval y (apply + (deref y) 1)))"
+                     "(apply foo xref)"
+                     "x)")
+    assert evaluate(base_env(), prog) == 4
