@@ -15,10 +15,10 @@ class AffineTypeChecker:
         # Try to interpret it as an integer or boolean first
         try:
             int(prog)
-            return lang.T_INT
+            return deepcopy(lang.T_INT)
         except ValueError:
             if prog in lang.bool_map:
-                return lang.T_BOOL
+                return deepcopy(lang.T_BOOL)
 
         if env.contains_fun(prog):
             return env.get_fun_def(prog)
@@ -51,7 +51,7 @@ class AffineTypeChecker:
                 signature_t.borrow_parent = valprog_t.borrow_parent
                 valprog_t.set_borrow()
             env.define_bind(name, signature_t)
-            return lang.T_UNIT
+            return deepcopy(lang.T_UNIT)
 
     @classmethod
     def check_set(cls, env: TypeCheckEnv, name, new_def):
@@ -71,7 +71,7 @@ class AffineTypeChecker:
                 env.get_bind_val(name).set_own()
             elif signature_t.is_own() and signature_t.is_lin():
                 raise tc_err.TypeMismatchError("Trying to set variable which owns value (could leak memory this way)")
-            return lang.T_UNIT
+            return deepcopy(lang.T_UNIT)
 
     @classmethod
     def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
@@ -86,7 +86,7 @@ class AffineTypeChecker:
 
             # Need to manually set up dummy parents for all reference types...
             if isinstance(t, dslT.RefType):
-                t.borrow_parent = t.referenced_type()
+                t.borrow_parent = deepcopy(t.referenced_type())
                 t.borrow_parent.set_borrow()
 
             new_env.define_bind(arg_name, t)
@@ -103,7 +103,7 @@ class AffineTypeChecker:
                                            f'which is not a subtype of declared return {sig_ret_t}')
         else:
             env.define_fun(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
-            return lang.T_UNIT
+            return deepcopy(lang.T_UNIT)
 
     @classmethod
     def check_mkref(cls, env: TypeCheckEnv, var):
@@ -145,7 +145,7 @@ class AffineTypeChecker:
             raise tc_err.TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
                                            f"but set was attempted with {new_def_type}")
 
-        return lang.T_UNIT
+        return deepcopy(lang.T_UNIT)
 
     @classmethod
     def check_apply(cls, env: TypeCheckEnv, fname, *fargs):
@@ -263,7 +263,7 @@ class AffineTypeChecker:
             ret = cls.check_atomic(env, prog)
         elif len(prog) == 0:
             # The empty list is always interpreted as nil.
-            ret = lang.T_NIL
+            ret = deepcopy(lang.T_NIL)
         elif prog[0] in macro_tcheck_fns:
             ret = macro_tcheck_fns[prog[0]](env, *prog[1:])
         else:
