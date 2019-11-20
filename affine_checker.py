@@ -136,6 +136,10 @@ class AffineTypeChecker:
             raise RuntimeError("Didn't pass in right number of arguments!")
 
         for i, (actual_argT, sigT) in enumerate(zip(actual_arg_t_ls, ftype.argTs)):
+
+            if isinstance(fsig_arg_t_ls[i], dslT.RefType):
+                assert env.contains_bind(fargs[i])
+
             if not dslT.Type.is_subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
                 raise tc_err.TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
 
