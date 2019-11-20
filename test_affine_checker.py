@@ -321,3 +321,26 @@ def test_nonexistent_ref():
     prog = dsl_parse("((defvar x (lin val int) 3) (defvar badref (un ref (un val int)) (mkref y))))")
     with pytest.raises(tc_err.BindingUndefinedError):
         ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_working_with_files():
+    prog = dsl_parse("("
+                     "(defvar f (lin val file) (apply fopen 123))"
+                     ")")
+    with pytest.raises(tc_err.UnusedLinVariableError):
+        ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+    prog = dsl_parse("("
+                     "(defvar f (lin val file) (apply fopen 123))"
+                     "(apply fclose f)"
+                     ")")
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+    prog = dsl_parse("("
+                     "(defvar f (lin val file) (apply fopen 123))"
+                     "(scope (defvar fref (un ref (lin val file)) (mkref f))"
+                      "       (apply fwrite fref 100)"
+                     ")"
+                     "(apply fclose f)"
+                     ")")
+    ATC.type_check(base_tcheck_env(), prog, descope=True)

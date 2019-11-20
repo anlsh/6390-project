@@ -31,6 +31,7 @@ builtin_fn_types = {
     "=": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_INT, T_LIN_INT)),
     "not": FunType(mod=Tmod.un, retT=T_BOOL, argTs=(T_LIN_BOOL,)),
     "fopen": FunType(mod=Tmod.un, retT=T_FILE, argTs=(T_LIN_INT,)),
-    "fwrite": FunType(mod=Tmod.un, retT=T_UNIT, argTs=dslT.RefType(mod=Tmod.un, ref_type=T_FILE)),
+    "fwrite": FunType(mod=Tmod.un, retT=T_UNIT, argTs=(dslT.RefType(mod=Tmod.un, ref_type=T_FILE),
+                                                       T_LIN_INT),),
     "fclose": FunType(mod=Tmod.un, retT=T_UNIT, argTs=(T_FILE,))
 }
