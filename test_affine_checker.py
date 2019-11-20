@@ -344,3 +344,26 @@ def test_working_with_files():
                      "(apply fclose f)"
                      ")")
     ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+    prog = dsl_parse("("
+                     "(defvar f (lin val file) (apply fopen 123))"
+                     "(scope (defvar fref (un ref (lin val file)) (mkref f))"
+                     "       (apply fwrite fref 100)"
+                     ")"
+                     "(apply fclose f)"
+                     ")")
+    ATC.type_check(base_tcheck_env(), prog, descope=True)
+
+
+def test_recursive_fun():
+    prog = dsl_parse("("
+                     "(defun fib (un val int) ((n (un val int))) "
+                     "    (defvar ret (un val int) 0) "
+                     "    (if (apply = 0 n) (set ret 0) "
+                     "    (if (apply = 1 n) (set ret 1) "
+                     "            (set ret (apply +  (apply fib (apply - n 1))  (apply fib (apply - n 2))  ))))"
+                     "     ret"
+                     ")"
+                     "(apply fib 0)"
+                     ")")
+    ATC.type_check(base_tcheck_env(), prog)
