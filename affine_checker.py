@@ -92,12 +92,15 @@ class AffineTypeChecker:
             new_env.define_bind(arg_name, t)
             arg_t_ls += (new_env.get_bind_val(arg_name),)
 
+        sig_ret_t = dslT.tparse(sig_ret_tprog)
+
         # And then check the body to see what is returned in the end. Set descope=True to make sure there aren't any
         # linear judgements unused
+        # We actually assume that the function has the correct signature to allow type-checking recursive functions
+        new_env.define_fun(fname, dslT.FunType(mod=lang.Tmod.un, retT=sig_ret_t, argTs=arg_t_ls))
         actual_ret_t = cls.type_check(new_env, body, descope=True)
 
         # Make sure that the actual return value is a subtype of the signature return value
-        sig_ret_t = dslT.tparse(sig_ret_tprog)
         if not dslT.Type.is_subtype(actual_ret_t, sig_ret_t):
             raise tc_err.TypeMismatchError(f'Function actually returns {actual_ret_t}, '
                                            f'which is not a subtype of declared return {sig_ret_t}')
