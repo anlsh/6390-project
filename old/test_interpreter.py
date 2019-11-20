@@ -132,3 +132,42 @@ def test_ref_fun():
                      "(apply foo xref)"
                      "x)")
     assert evaluate(base_env(), prog) == 4
+
+
+def test_recursive_fun():
+    prog = dsl_parse("("
+                     "(defun fib (un val int) ((n (un val int))) "
+                     "    (defvar ret (un val int) 0) "
+                     "    (if (apply = 0 n) (set ret 0) "
+                     "    (if (apply = 1 n) (set ret 1) "
+                     "            (set ret (apply +  (apply fib (apply - n 1))  (apply fib (apply - n 2))  ))))"
+                     "     ret"
+                     ")"
+                     "(apply fib 0))")
+    assert evaluate(base_env(), prog) == 0
+
+    prog = dsl_parse("("
+                     "(defun fib (un val int) ((n (un val int))) "
+                     "    (defvar ret (un val int) 0) "
+                     "    (if (apply = 0 n) "
+                     "         (set ret 0) "
+                     "         (if (apply = 1 n) "
+                     "                 (set ret 1) "
+                     "                 (set ret (apply +  (apply fib (apply - n 1))  (apply fib (apply - n 2))  ))))"
+                     "     ret"
+                     ")"
+                     "(apply fib 2))")
+    assert evaluate(base_env(), prog) == 1
+
+    prog = dsl_parse("("
+                     "(defun fib (un val int) ((n (un val int))) "
+                     "    (defvar ret (un val int) 0) "
+                     "    (if (apply = 0 n) "
+                     "         (set ret 0) "
+                     "         (if (apply = 1 n) "
+                     "                 (set ret 1) "
+                     "                 (set ret (apply +  (apply fib (apply - n 1))  (apply fib (apply - n 2))  ))))"
+                     "     ret"
+                     ")"
+                     "(apply fib 4))")
+    assert evaluate(base_env(), prog) == 3

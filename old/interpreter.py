@@ -1,4 +1,4 @@
-from env import Env, deepcopy_env
+from env import Env
 from language import *
 
 
@@ -35,7 +35,7 @@ def eval_form(base_env: Env, prog):
         # TODO Only the affine checker should cares about deftype
         return base_type
 
-    def eval_defun(env: Env, fname, fun_ret_t, argspec_list, fn_body):
+    def eval_defun(env: Env, fname, fun_ret_t, argspec_list, *fn_body):
         env.define_fun(fname, Procedure(base_env.functions, argspec_list, fn_body))
 
     def eval_set(env: Env, var_name, val_prog):
@@ -52,7 +52,7 @@ def eval_form(base_env: Env, prog):
         Take in when, then, and else ASTs and execute the if statement
         """
         test_result = eval_form(env, test)
-        inner_env = deepcopy_env(env)
+        inner_env = Env(outer=env)
 
         if test_result:
             ret = eval_form(inner_env, then_c)
@@ -64,7 +64,7 @@ def eval_form(base_env: Env, prog):
 
     def eval_while(env: Env, test_c, default_c, body_c):
 
-        inner_env = deepcopy_env(env)
+        inner_env = Env(outer=env)
         return_default = True
         ret = None
 
