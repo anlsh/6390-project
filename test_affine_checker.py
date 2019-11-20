@@ -247,7 +247,7 @@ def test_nested_fun():
 def test_ref_fun():
     prog = dsl_parse("((defvar x (un val int) 3)"
                      "(defvar xref (un ref (un val int)) (mkref x)) "
-                     "(defun foo (un val int) ((y (un ref (un val int)))) (setref y (apply + y 1)))))"
+                     "(defun foo (un val unit) ((y (un ref (un val int)))) (setrefval y (apply + (deref y) 1)))) )"
                      "(apply foo xref)"
                      "x)")
     ATC.type_check(base_tcheck_env(), prog)
@@ -315,3 +315,9 @@ def test_ref_borrow4():
                      "    (defvar xref2 (un ref (lin val int)) xref))"
                      "(apply + 3 x))")
     ATC.type_check(base_tcheck_env(), prog)
+
+
+def test_nonexistent_ref():
+    prog = dsl_parse("((defvar x (lin val int) 3) (defvar badref (un ref (un val int)) (mkref y))))")
+    with pytest.raises(tc_err.BindingUndefinedError):
+        ATC.type_check(base_tcheck_env(), prog)

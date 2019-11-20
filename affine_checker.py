@@ -2,6 +2,7 @@ import language as lang
 
 import dsl_types as dslT
 from typing import Tuple, Union
+from copy import deepcopy
 
 from env import TypeCheckEnv, deepcopy_env
 import typecheck_errors as tc_err
@@ -30,7 +31,6 @@ class AffineTypeChecker:
 
         # If the judgement is unrestricted, then we can use it without any worry. If not, then we have to remove
         # the judgement from the context after using it.
-        # TODO This is where we'd implement checks for the "copy" trait.
         t = env.get_bind_val(prog)
         if not t.is_un():
             t.set_borrow()
@@ -66,7 +66,7 @@ class AffineTypeChecker:
             if isinstance(signature_t, dslT.RefType):
                 signature_t.borrow_parent = valprog_t.borrow_parent
                 valprog_t.set_borrow()
-            # TODO Think this is justfied, but double-check
+
             if signature_t.is_borrow():
                 env.get_bind_val(name).set_own()
             elif signature_t.is_own() and signature_t.is_lin():
@@ -82,11 +82,18 @@ class AffineTypeChecker:
         # To type-check the body, first assume that all arguments have the declared types...
         arg_t_ls = ()
         for arg_name, arg_tprog in arg_spec_ls:
-            new_env.define_bind(arg_name, dslT.tparse(arg_tprog))
+            t = dslT.tparse(arg_tprog)
+
+            # Need to manually set up dummy parents for all reference types...
+            if isinstance(t, dslT.RefType):
+                t.borrow_parent = t.referenced_type()
+                t.borrow_parent.set_borrow()
+
+            new_env.define_bind(arg_name, t)
             arg_t_ls += (new_env.get_bind_val(arg_name),)
 
         # And then check the body to see what is returned in the end. Set descope=True to make sure there aren't any
-        # linear judgements used
+        # linear judgements unused
         actual_ret_t = cls.type_check(new_env, body, descope=True)
 
         # Make sure that the actual return value is a subtype of the signature return value
@@ -107,18 +114,36 @@ class AffineTypeChecker:
         return dslT.RefType(mod=lang.Tmod.un, ref_type=ref_type, borrow_parent=ref_type)
 
     @classmethod
-    def check_setref(cls, env: TypeCheckEnv, ref_name, new_def):
+    def check_deref(cls, env: TypeCheckEnv, refname):
+        ref_type = env.get_bind_val(refname)
+        assert isinstance(ref_type, dslT.RefType)
+        if not ref_type.is_own():
+            raise RuntimeError("Attempt to dereference borrowed reference!")
+        ref_base_type = ref_type.referenced_type()
+        if ref_base_type.is_un():
+            ret_type = deepcopy(ref_base_type)
+            ret_type.set_own_unconditional()
+        else:
+            raise tc_err.DerefNonCopyError()
+
+        return ret_type
+
+    @classmethod
+    def check_setrefval(cls, env: TypeCheckEnv, ref_name, new_def):
         ref_type = env.get_bind_val(ref_name)
         if not isinstance(ref_type, dslT.RefType):
-            raise RuntimeError("Attempted to use setref on a non-reference!")
+            raise RuntimeError("Attempted to use setrefval on a non-reference!")
+        if not ref_type.is_own():
+            raise RuntimeError("Attempting to set through a borrowed reference")
+        if ref_type.referenced_type().is_lin():
+            raise tc_err.UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
 
         new_def_type = cls.type_check(env, new_def, being_bound=True)
-        if not new_def_type == ref_type.referenced_type():
+        if not new_def_type.is_own():
+            raise RuntimeError("The definition form evaluates to something borrowed!")
+        elif not new_def_type.eq_ignore_oship(ref_type.referenced_type()):
             raise tc_err.TypeMismatchError(f"{ref_name} is reference to {ref_type.referenced_type()}, "
                                            f"but set was attempted with {new_def_type}")
-
-        if ref_type.is_own() and ref_type.referenced_type().is_lin():
-            raise tc_err.UnusedLinVariableError("Attempt to set an owned linear variable through a reference")
 
         return lang.T_UNIT
 
@@ -139,9 +164,16 @@ class AffineTypeChecker:
 
             if isinstance(fsig_arg_t_ls[i], dslT.RefType):
                 assert env.contains_bind(fargs[i])
+                assert env.get_bind_val(fargs[i]).is_own()
+                env.get_bind_val(fargs[i]).set_borrow()
 
             if not dslT.Type.is_subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
                 raise tc_err.TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
+
+        # Unborrow all the things passed in as arguments
+        for i, bname in enumerate(fargs):
+            if isinstance(fsig_arg_t_ls[i], dslT.RefType):
+                env.get_bind_val(fargs[i]).set_own_unconditional()
 
         return ftype.retT
 
@@ -217,8 +249,9 @@ class AffineTypeChecker:
         macro_tcheck_fns = {
             "defvar": cls.check_defvar,
             "defun": cls.check_defun,
-            "setref": cls.check_setref,
+            "setrefval": cls.check_setrefval,
             "mkref": cls.check_mkref,
+            "deref": cls.check_deref,
             "set": cls.check_set,
             "apply": cls.check_apply,
             "if": cls.check_if,

@@ -41,10 +41,17 @@ class Type:
         self.borrow_parent = borrow_parent
         self._ownership = Town.own
 
-    def __eq__(self, other):
-        assert isinstance(other, Type)
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Type):
+            return False
+
+        return self.eq_ignore_oship(other) and (self._ownership == other._ownership)
+
+    def eq_ignore_oship(self, other) -> bool:
+        if not isinstance(other, Type):
+            return False
         return (self._mod == other._mod) and (self._category == other._category) \
-            and (self._type_args == other._type_args) and (self._ownership == other._ownership)
+                and (self._type_args == other._type_args)
 
     def set_borrow(self,):
         if self._ownership == Town.borrow:
@@ -54,6 +61,9 @@ class Type:
     def set_own(self,):
         if self._ownership == Town.own:
             raise RuntimeError("Handle already owns a resource, but we are attempting to make it own")
+        self.set_own_unconditional()
+
+    def set_own_unconditional(self,):
         self._ownership = Town.own
 
     def is_borrow(self,) -> bool:

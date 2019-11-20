@@ -36,3 +36,7 @@ class ReferenceNoEffectError(RuntimeError):
 
 class DestructiveReturnOfOwnership(RuntimeError):
     pass
+
+
+class DerefNonCopyError(RuntimeError):
+    pass
