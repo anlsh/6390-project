@@ -125,6 +125,14 @@ def test_while_statement():
         evaluate(base_env(), prog)
 
 
+def test_ref():
+    prog = dsl_parse("((defvar x (un val int) 3)"
+                     "(defvar xref (un ref (un val int)) (mkref x)) "
+                     "(setrefval xref (apply + (deref xref) 1))"
+                     "x)")
+    assert evaluate(base_env(), prog) == 4
+
+
 def test_ref_fun():
     prog = dsl_parse("((defvar x (un val int) 3)"
                      "(defvar xref (un ref (un val int)) (mkref x)) "
