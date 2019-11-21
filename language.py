@@ -2,7 +2,7 @@ import operator as op
 import dsl_types as dslT
 from dsl_types import FunType, ValType, Tmod
 
-MACRO_NAMES = ["defun", "deftype", "defvar", "apply", "if", "while", "set", "mkref", "setref", "deref", "setrefval"]
+MACRO_NAMES = ["defun", "defvar", "apply", "if", "while", "set", "mkref", "setref", "deref", "setrefval"]
 bool_map = {"true": True, "false": False}
 
 builtin_fn_vals = {

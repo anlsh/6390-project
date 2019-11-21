@@ -31,10 +31,6 @@ def eval_form(base_env: Env, prog):
         env.define_bind(name, final)
         return None
 
-    def eval_deftype(env: Env, base_type):
-        # TODO Only the affine checker should cares about deftype
-        return None
-
     def eval_defun(env: Env, fname, fun_ret_t, argspec_list, *fn_body):
         env.define_fun(fname, Procedure(base_env.functions, argspec_list, fn_body))
         return None
@@ -108,7 +104,6 @@ def eval_form(base_env: Env, prog):
     macro_evaluators = {
         "defun": eval_defun,
         "defvar": eval_defvar,
-        "deftype": eval_deftype,
         "set": eval_set,
         "apply": eval_apply,
         "if": eval_if,
@@ -145,19 +140,13 @@ def eval_form(base_env: Env, prog):
             return T_NIL
         else:
             first_element = prog[0]
-            if isinstance(first_element, str):
-                if first_element in MACRO_NAMES:
-                    return macro_evaluators[first_element](base_env, *prog[1:])
-                else:
-                    ret = None
-                    for subprog in prog:
-                        ret = eval_form(base_env, subprog)
-                    return ret
+
+            if first_element in MACRO_NAMES:
+                return macro_evaluators[first_element](base_env, *prog[1:])
             else:
                 ret = None
-                for prog in prog:
-                    ret = eval_form(base_env, prog)
-
+                for subprog in prog:
+                    ret = eval_form(base_env, subprog)
                 return ret
 
 
