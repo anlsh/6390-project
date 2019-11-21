@@ -152,8 +152,10 @@ def eval_form(base_env: Env, prog):
                 if first_element in MACRO_NAMES:
                     return macro_evaluators[first_element](base_env, *prog[1:])
                 else:
-                    evaluated_args = [eval_form(base_env, arg) for arg in prog[1:]]
-                    return base_env.get_bind_val(first_element)(*evaluated_args)
+                    ret = None
+                    for subprog in prog:
+                        ret = eval_form(base_env, subprog)
+                    return ret
             else:
                 ret = None
                 for prog in prog:
