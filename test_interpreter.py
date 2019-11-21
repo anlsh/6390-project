@@ -10,10 +10,18 @@ from env import Env
 def base_env():
     return Env(defaults=lang.builtin_fn_vals)
 
-# TODO Raise error if variable not initialized? Currently raises TypeError
+
+def test_seq_eval():
+    prog = dsl_parse("(true 3)")
+    assert evaluate(base_env(), prog) == 3
+
+
 def test_define_variable():
     prog = dsl_parse("(defvar x (un val footype) 3)")
-    assert evaluate(base_env(), prog) == lang.T_UNIT
+    assert evaluate(base_env(), prog) is None
+
+    prog = dsl_parse("((defvar x (un val footype) 3) x)")
+    assert evaluate(base_env(), prog) == 3
 
 
 def test_var_access():

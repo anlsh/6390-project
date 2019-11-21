@@ -29,19 +29,20 @@ def eval_form(base_env: Env, prog):
     def eval_defvar(env: Env, name, declared_tprog, init_prog):
         final = eval_form(env, init_prog)
         env.define_bind(name, final)
-        return T_UNIT
+        return None
 
     def eval_deftype(env: Env, base_type):
         # TODO Only the affine checker should cares about deftype
-        return base_type
+        return None
 
     def eval_defun(env: Env, fname, fun_ret_t, argspec_list, *fn_body):
         env.define_fun(fname, Procedure(base_env.functions, argspec_list, fn_body))
+        return None
 
     def eval_set(env: Env, var_name, val_prog):
         final = eval_form(env, val_prog)
         env.set_bind_val(var_name, final)
-        return final
+        return None
 
     def eval_apply(env: Env, fun_name, *arg_list):
         eval_args = [eval_form(env, arg) for arg in arg_list]
@@ -100,7 +101,6 @@ def eval_form(base_env: Env, prog):
         val, defining_env = referenced_binding
         defining_env.set_bind_val(var, eval_new_val)
 
-
     ######################################
     # Begin actual evaluation code here! #
     ######################################
@@ -139,10 +139,7 @@ def eval_form(base_env: Env, prog):
         except ValueError:
             pass
 
-        if len(prog) == 1:
-            return eval_form(base_env, str(base_env.get_bind_val(prog)))
-        else:
-            return base_env.get_bind_val(prog)
+        return base_env.get_bind_val(prog)
     else:
         if len(prog) == 0:
             return T_NIL
