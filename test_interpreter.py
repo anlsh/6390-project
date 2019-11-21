@@ -1,6 +1,6 @@
 import pytest
 
-from old.interpreter import evaluate
+from interpreter import evaluate
 from dsl_parser import dsl_parse
 import language as lang
 from typecheck_errors import BindingUndefinedError
