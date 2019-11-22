@@ -171,7 +171,7 @@ class AffineTypeChecker:
                 env.get_bind_val(fargs[i]).set_borrow()
 
             if not dslT.Type.is_subtype(actual_arg_t_ls[i], fsig_arg_t_ls[i]):
-                raise tc_err.TypeMismatchError(f'Argument {i} expected to be {sigT}, got {actual_argT}')
+                raise tc_err.TypeMismatchError(f'Argument {i} expected to be {str(sigT)}, got {str(actual_argT)}')
 
         # Unborrow all the things passed in as arguments
         for i, bname in enumerate(fargs):
@@ -192,7 +192,7 @@ class AffineTypeChecker:
     def check_if(cls, env: TypeCheckEnv, test, then_body, else_body):
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
-            raise tc_err.TypeMismatchError("If statement conditional was not of type bool.")
+            raise tc_err.TypeMismatchError(f"If statement conditional is not bool, but {str(test_type)}")
 
         new_env_then = TypeCheckEnv(outer=deepcopy_env(env))
         new_env_else = TypeCheckEnv(outer=env)
@@ -204,7 +204,7 @@ class AffineTypeChecker:
             raise tc_err.EnvironmentMismatchError("Branches of if statement produce different environments")
 
         if then_type != else_type:
-            raise tc_err.TypeMismatchError("Then body type does not equal else body type.")
+            raise tc_err.TypeMismatchError(f"Then body type {str(then_type)} does not equal else body type {str(else_type)}")
 
         return then_type
 
@@ -212,7 +212,7 @@ class AffineTypeChecker:
     def check_while(cls, env: TypeCheckEnv, test, default, body):
         test_type = cls.type_check(env, test)
         if not dslT.Type.is_subtype(test_type, lang.T_LIN_BOOL):
-            raise tc_err.TypeMismatchError("While statement conditional was not of type bool.")
+            raise tc_err.TypeMismatchError(f"While statement conditional was not bool, but {str(test_type)}")
         old_env = deepcopy_env(env)
 
         new_env_def = TypeCheckEnv(outer=deepcopy_env(env))
@@ -226,7 +226,7 @@ class AffineTypeChecker:
             raise tc_err.EnvironmentMismatchError("Body clause illegally modifies environment")
 
         if not def_type == bod_type:
-            raise tc_err.TypeMismatchError("Default and Body clauses return values of different types")
+            raise tc_err.TypeMismatchError(f"Default clause returns {str(def_type)}, while Body clause returns str{str(bod_type)}")
 
         return def_type
 
