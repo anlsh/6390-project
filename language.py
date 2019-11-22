@@ -8,7 +8,7 @@ bool_map = {"true": True, "false": False}
 builtin_fn_vals = {
     '+': op.add, '-': op.sub, '*': op.mul, '/': op.truediv,
     '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le, '=': op.eq,
-    'not': op.not_,
+    'not': op.not_, 'or': op.or_, 'and': op.and_,
     'fopen': lambda id: open(str(id), "w+"),
     'fwrite': lambda f, out: f[1][0].write(str(out) + "\n"),
     'fclose': lambda f: f.close(),
