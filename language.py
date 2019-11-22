@@ -6,9 +6,12 @@ MACRO_NAMES = ["defun", "defvar", "apply", "if", "while", "set", "mkref", "setre
 bool_map = {"true": True, "false": False}
 
 builtin_fn_vals = {
-        '+': op.add, '-': op.sub, '*': op.mul, '/': op.truediv,
-        '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le, '=': op.eq,
-        'not': op.not_
+    '+': op.add, '-': op.sub, '*': op.mul, '/': op.truediv,
+    '>': op.gt, '<': op.lt, '>=': op.ge, '<=': op.le, '=': op.eq,
+    'not': op.not_,
+    'fopen': lambda id: open(str(id), "w+"),
+    'fwrite': lambda f, out: f[1][0].write(str(out) + "\n"),
+    'fclose': lambda f: f.close(),
 }
 
 T_NIL = ValType(mod=Tmod.un, tname='nil')

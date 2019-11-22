@@ -187,3 +187,18 @@ def test_recursive_fun():
                      ")"
                      "(apply fib 4))")
     assert evaluate(base_env(), prog) == 3
+
+
+def test_file_stuff():
+    prog = dsl_parse(
+        """
+        (
+            (defvar f _ (apply fopen 3))
+            (scope
+                (defvar fref _ (mkref f))
+                (apply fwrite fref 33)
+             )
+             (apply fclose f)
+        )
+        """)
+    evaluate(base_env(), prog)

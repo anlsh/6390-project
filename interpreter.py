@@ -44,6 +44,9 @@ def eval_form(base_env: Env, prog):
         eval_args = [eval_form(env, arg) for arg in arg_list]
         return env.get_fun_def(fun_name)(*eval_args)
 
+    def eval_scope(env: Env, *prog):
+        return evaluate(Env(outer=env), prog)
+
     def eval_if(env: Env, test, then_c, else_c, ):
         """
         Take in when, then, and else ASTs and execute the if statement
@@ -104,6 +107,7 @@ def eval_form(base_env: Env, prog):
     macro_evaluators = {
         "defun": eval_defun,
         "defvar": eval_defvar,
+        "scope": eval_scope,
         "set": eval_set,
         "apply": eval_apply,
         "if": eval_if,
@@ -141,7 +145,7 @@ def eval_form(base_env: Env, prog):
         else:
             first_element = prog[0]
 
-            if first_element in MACRO_NAMES:
+            if first_element in macro_evaluators:
                 return macro_evaluators[first_element](base_env, *prog[1:])
             else:
                 ret = None
