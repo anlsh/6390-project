@@ -144,11 +144,17 @@ class FunType(Type):
     def argTs(self) -> Tuple[Type]:
         return self._type_args[1]
 
+    def __repr__(self):
+        return f'({self._mod} function: {"=>".join(self._type_args[1] + [self._type_args[0]])})'
+
 
 class ValType(Type):
     def __init__(self, mod: Tmod, tname, borrow_parent: Type = None):
         super().__init__(mod=mod, category=Tcat.val, args=tname,
                          borrow_parent=borrow_parent)
+
+    def __repr__(self):
+        return f'({self._mod} value of {self._type_args})'
 
 
 class RefType(Type):
@@ -161,6 +167,9 @@ class RefType(Type):
 
     def return_reference(self,) -> None:
         self.borrow_parent.set_own()
+
+    def __repr__(self):
+        return f'({self._mod} reference to {self._type_args})'
 
 
 def tparse(type_prog: Union[str, Tuple]) -> Union[Type, str]:
