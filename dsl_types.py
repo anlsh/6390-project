@@ -145,7 +145,7 @@ class FunType(Type):
         return self._type_args[1]
 
     def __repr__(self):
-        return f'({self._mod} function: {"=>".join(self._type_args[1] + [self._type_args[0]])})'
+        return f'({self._mod} {"=>".join(self._type_args[1] + [self._type_args[0]])})'
 
 
 class ValType(Type):
@@ -154,7 +154,7 @@ class ValType(Type):
                          borrow_parent=borrow_parent)
 
     def __repr__(self):
-        return f'({self._mod} value of {self._type_args})'
+        return f'({self._mod} {self._type_args})'
 
 
 class RefType(Type):
