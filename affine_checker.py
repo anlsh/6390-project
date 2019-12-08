@@ -76,7 +76,7 @@ class AffineTypeChecker:
     @classmethod
     def check_defun(cls, env: TypeCheckEnv, fname, sig_ret_tprog, arg_spec_ls, *body):
 
-        # Functions don't close over enclosing values, so declare.0 a new env that the body will be type-checking in
+        # Functions don't close over enclosing values, so declare a new env that the body will be type-checking in
         new_env = TypeCheckEnv(defaults=env.functions)
 
         # To type-check the body, first assume that all arguments have the declared types...
@@ -276,7 +276,6 @@ class AffineTypeChecker:
         if not being_bound:
             if ret.is_lin():
                 raise tc_err.UnusedLinVariableError()
-            # TODO It's not so great to hardcode this thing here, but maybe it's not too ugly?
             elif prog[0] == 'mkref':
                 raise tc_err.ReferenceNoEffectError
 

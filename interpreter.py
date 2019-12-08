@@ -11,7 +11,6 @@ class Procedure:
     def __call__(self, *argvals):
         if len(argvals) != len(self.argspec_ls):
             raise RuntimeError("Mismatch between number of arguments required and number of arguments given")
-        # TODO How to have an env that captures previously defined functions but not variables?
         env = Env(defaults=self.defaults)
         for argspec, val in zip(self.argspec_ls, argvals):
             name, arg_type = argspec

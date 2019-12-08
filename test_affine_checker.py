@@ -154,7 +154,6 @@ def test_decl_var2():
 
 
 def test_decl_var3():
-    # TODO Should we be able to set multiple values like this?
     prog = dsl_parse("((defvar x (un val int) 3) (set x 3) (set x 4))")
     t = ATC.type_check(base_tcheck_env(), prog)
     assert t == lang.T_UNIT
@@ -162,7 +161,6 @@ def test_decl_var3():
 
 
 def test_decl_var4():
-    # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (un val int) 3) (set x 3) (set x (+ x 1)))")
     t = ATC.type_check(base_tcheck_env(), prog)
     assert t == lang.T_UNIT
@@ -170,26 +168,22 @@ def test_decl_var4():
 
 
 def test_unused_linint_errs():
-    # TODO Do we need to care about this?
     prog = dsl_parse("(defvar x (lin val int) 3)")
     with pytest.raises(tc_err.UnusedLinVariableError):
         ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_unused_affint_fine():
-    # TODO Do we need to care about this?
     prog = dsl_parse("(defvar x (aff val int) 3)")
     ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_oneuse_affint_fine():
-    # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (aff val int) 3) x)")
     ATC.type_check(base_tcheck_env(), prog, descope=True)
 
 
 def test_twouse_affint_errs():
-    # TODO Do we need to care about this?
     prog = dsl_parse("((defvar x (aff val int) 3) x x)")
     with pytest.raises(tc_err.LinAffineVariableReuseError):
         ATC.type_check(base_tcheck_env(), prog, descope=True)
